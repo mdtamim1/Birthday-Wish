@@ -1143,143 +1143,33 @@ html, body {
   :root { --orbit-r: 168px; --oc-w: 96px; --oc-h: 130px; }
 }
 
-/* Make the cake scene panel use full height with no extra scroll */
+/* =========== SCENE 2: 🎂 3D WEBGL CAKE EXPERIENCE =========== */
 #scene-cake {
-  padding-bottom: 60px;
+  padding-bottom: 24px;
 }
 
 .cake-scene-content {
-  gap: 0 !important;
+  display: flex !important;
+  flex-direction: column !important;
   justify-content: flex-end !important;
   align-items: center !important;
-  height: calc(100vh - 155px) !important;
-  max-height: 680px;
+  height: 100% !important;
+  max-height: 100vh !important;
+  padding-bottom: 30px !important;
+  position: relative !important;
+  pointer-events: none !important;
 }
 
-/* Orbit stage — grows to fill available space, cake renders behind via WebGL */
-.cake-orbit-wrap {
-  position: relative;
-  width: 100%;
-  flex: 1;
-  min-height: 180px;
-  perspective: 860px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  overflow: visible;
-}
-
-/* Orbit ring: positioned at the CAKE BASE level, tilted for realism */
-.orbit-ring-3d {
-  position: absolute;
-  left: 50%;          /* horizontal center of orbit-wrap */
-  top: 70%;           /* push down to cake's lower base tier */
-  width: 0; height: 0;
-  transform-style: preserve-3d;
-  animation: orbit3DSpin 22s linear infinite;
-}
-
-@keyframes orbit3DSpin {
-  from { transform: rotateX(22deg) rotateY(0deg); }
-  to   { transform: rotateX(22deg) rotateY(360deg); }
-}
-
-.orbit-card {
-  position: absolute;
-  width: var(--oc-w);
-  height: var(--oc-h);
-  transform: rotateY(calc(var(--idx) * 90deg)) translateZ(var(--orbit-r));
-  backface-visibility: visible;
-  cursor: pointer;
-}
-
-.oc-inner {
-  width: 100%; height: 100%;
-  position: relative;
-  border-radius: 20px;
-  overflow: hidden;
-  background: linear-gradient(145deg,
-    rgba(255,255,255,0.13) 0%,
-    rgba(218,94,201,0.06) 50%,
-    rgba(255,255,255,0.03) 100%);
-  border: 1px solid rgba(218,94,201,0.45);
-  box-shadow:
-    0 0 0 1px rgba(255,255,255,0.08),
-    0 24px 50px rgba(0,0,0,0.75),
-    0 0 30px rgba(218,94,201,0.2),
-    inset 0 1px 0 rgba(255,255,255,0.3);
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
-}
-
-.oc-img {
-  position: absolute;
-  inset: 0;
-  width: 100%; height: 100%;
-  object-fit: cover;
-  display: block;
-  border-radius: 20px;
-}
-
-.oc-img[src=""] { display: none; }
-.oc-img[src=""] + .oc-placeholder { display: flex; }
-.oc-placeholder {
-  position: absolute;
-  inset: 0;
-  display: none;
-  align-items: center;
-  justify-content: center;
-  font-size: 2.2rem;
-  background: linear-gradient(145deg, rgba(30,10,60,0.92), rgba(76,29,117,0.82));
-  border-radius: 20px;
-  color: var(--text-muted);
-}
-
-/* Top gradient overlay */
-.oc-frame-top {
-  position: absolute;
-  top: 0; left: 0; right: 0;
-  height: 40%;
-  background: linear-gradient(180deg, rgba(218,94,201,0.18), transparent);
-  border-radius: 20px 20px 0 0;
-  pointer-events: none;
-}
-
-/* Bottom gradient overlay */
-.oc-frame-bot {
-  position: absolute;
-  bottom: 0; left: 0; right: 0;
-  height: 35%;
-  background: linear-gradient(0deg, rgba(0,0,0,0.65), transparent);
-  border-radius: 0 0 20px 20px;
-  pointer-events: none;
-}
-
-/* Card sweep shine */
-.oc-shine {
-  position: absolute;
-  top: 0; left: -120%;
-  width: 70%; height: 100%;
-  background: linear-gradient(to right, transparent, rgba(255,255,255,0.22), transparent);
-  transform: skewX(-20deg);
-  animation: ocShineSweep 7s ease-in-out infinite;
-  animation-delay: calc(var(--idx) * 1.75s);
-  pointer-events: none;
-}
-
-@keyframes ocShineSweep {
-  0%, 55% { left: -120%; }
-  75%, 100% { left: 200%; }
-}
-
-/* ============  CONTROLS ZONE (cleanly below orbit area)  ============ */
+/* ============  CONTROLS ZONE (cleanly below the 3D WebGL cake)  ============ */
 .cake-controls-zone {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 8px;
+  gap: 12px;
   width: 100%;
-  padding: 4px 0 8px;
-  flex-shrink: 0;
+  padding-bottom: 12px;
+  z-index: 50;
+  pointer-events: auto !important;
 }
 
 .cake-center-ctrl { display: none; }
@@ -1294,6 +1184,12 @@ html, body {
   align-items: center;
   gap: 8px;
   -webkit-tap-highlight-color: transparent;
+  transition: transform 0.3s ease;
+  pointer-events: auto !important;
+}
+
+.blow-orb-btn:hover {
+  transform: scale(1.08);
 }
 
 /* Expanding glow rings */
@@ -1423,6 +1319,29 @@ html, body {
 @keyframes cutShine {
   0%, 60% { transform: translateX(-150%); }
   100%     { transform: translateX(250%); }
+}
+
+.flow-indicator-cake {
+  margin-top: 4px;
+  transform: scale(0.9);
+  opacity: 0.9;
+}
+
+.flow-indicator-cake:hover {
+  transform: translateY(-2px) scale(0.94);
+  opacity: 1;
+}
+
+.flow-indicator-cake .flow-capsule {
+  padding: 6px 14px 6px 8px;
+}
+
+.flow-indicator-cake .flow-main-text {
+  font-size: 0.76rem;
+}
+
+.flow-indicator-cake .flow-sub-text {
+  font-size: 0.58rem;
 }
 
 

@@ -124,63 +124,21 @@
   <section class="scene-panel" id="scene-cake" data-scene="1">
     <div class="scene-content cake-scene-content">
 
-      <!-- 3D Photo Orbit wrap — photos orbit around the WebGL cake -->
-      <div class="cake-orbit-wrap" id="cakeOrbitWrap">
-        <div class="orbit-ring-3d" id="orbitRing3D">
-          <div class="orbit-card" style="--idx:0">
-            <div class="oc-inner">
-              <img class="oc-img" src="" alt="" />
-              <div class="oc-placeholder"><span>📸</span></div>
-              <div class="oc-shine"></div>
-              <div class="oc-frame-top"></div>
-              <div class="oc-frame-bot"></div>
-            </div>
-          </div>
-          <div class="orbit-card" style="--idx:1">
-            <div class="oc-inner">
-              <img class="oc-img" src="" alt="" />
-              <div class="oc-placeholder"><span>📸</span></div>
-              <div class="oc-shine"></div>
-              <div class="oc-frame-top"></div>
-              <div class="oc-frame-bot"></div>
-            </div>
-          </div>
-          <div class="orbit-card" style="--idx:2">
-            <div class="oc-inner">
-              <img class="oc-img" src="" alt="" />
-              <div class="oc-placeholder"><span>📸</span></div>
-              <div class="oc-shine"></div>
-              <div class="oc-frame-top"></div>
-              <div class="oc-frame-bot"></div>
-            </div>
-          </div>
-          <div class="orbit-card" style="--idx:3">
-            <div class="oc-inner">
-              <img class="oc-img" src="" alt="" />
-              <div class="oc-placeholder"><span>📸</span></div>
-              <div class="oc-shine"></div>
-              <div class="oc-frame-top"></div>
-              <div class="oc-frame-bot"></div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Controls BELOW the cake/orbit — clean separation -->
+      <!-- Clean Controls Zone Positioned at Bottom Below WebGL 3D Cake -->
       <div class="cake-controls-zone" id="cakeControlsZone">
 
         <!-- Blow candle premium orb -->
-        <button class="blow-orb-btn" id="blowCandleBtn">
+        <button class="blow-orb-btn" id="blowCandleBtn" aria-label="Make a Wish and Blow Candles">
           <div class="blow-ring blow-ring-1"></div>
           <div class="blow-ring blow-ring-2"></div>
           <div class="blow-ring blow-ring-3"></div>
           <div class="blow-core">
             <span class="blow-wind-icon">🌬️</span>
           </div>
-          <span class="blow-orb-label">Blow Candles</span>
+          <span class="blow-orb-label">Tap to Blow Candles</span>
         </button>
 
-        <!-- Wish banner -->
+        <!-- Wish banner (shows on blow) -->
         <div class="wish-success-banner" id="wishBanner" style="display:none;">
           <span class="banner-sparkle">✨</span>
           <span class="banner-txt">🎉 Wish Sent to the Stars! 🥳</span>
@@ -195,24 +153,24 @@
           <span>🍰</span>
         </button>
 
-      </div>
-
-      <!-- Refined Celestial Flow Indicator -->
-      <div class="flow-indicator" id="flowNext2" data-next="2">
-        <div class="flow-capsule">
-          <div class="flow-gem">
-            <span class="flow-gem-icon">💌</span>
-            <div class="flow-gem-halo"></div>
+        <!-- Refined Celestial Flow Indicator (Optionally advance to Letter) -->
+        <div class="flow-indicator flow-indicator-cake" id="flowNext2" data-next="2">
+          <div class="flow-capsule">
+            <div class="flow-gem">
+              <span class="flow-gem-icon">💌</span>
+              <div class="flow-gem-halo"></div>
+            </div>
+            <div class="flow-text-group">
+              <span class="flow-main-text">A Heartfelt Royal Letter</span>
+              <span class="flow-sub-text">Next Chapter ✦</span>
+            </div>
+            <div class="flow-arrow-wrap">
+              <span class="flow-arrow-icon">❯</span>
+            </div>
+            <div class="flow-capsule-shine"></div>
           </div>
-          <div class="flow-text-group">
-            <span class="flow-main-text">A Heartfelt Royal Letter</span>
-            <span class="flow-sub-text">Next Chapter ✦</span>
-          </div>
-          <div class="flow-arrow-wrap">
-            <span class="flow-arrow-icon">❯</span>
-          </div>
-          <div class="flow-capsule-shine"></div>
         </div>
+
       </div>
 
     </div>

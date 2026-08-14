@@ -392,59 +392,140 @@ function initThreeScene() {
 
   // 4. Real 3D Birthday Cake Group
   cakeGroup = new THREE.Group();
-  cakeGroup.position.set(0, -0.6, 0);
+  cakeGroup.position.set(0, 0.05, 0);
 
-  const tierColors = currentTheme.threeCake || [0xb45309, 0xf59e0b, 0xfbbf24];
+  const tierColors = currentTheme.threeCake || [0x7e22ce, 0xda5ec9, 0xec4899];
+  const frostingColor = 0xfff0f5; // Creamy vanilla frosting
 
-  // Base Tier
-  const tier1Mat = new THREE.MeshStandardMaterial({ color: tierColors[0], metalness: 0.3, roughness: 0.5 });
-  const tier1 = new THREE.Mesh(new THREE.CylinderGeometry(1.2, 1.2, 0.5, 32), tier1Mat);
-  tier1.position.y = -0.25;
+  // Frosting material
+  const frostingMat = new THREE.MeshStandardMaterial({
+    color: frostingColor,
+    roughness: 0.25,
+    metalness: 0.1,
+    emissive: 0xffffff,
+    emissiveIntensity: 0.08
+  });
+
+  // Base Tier (Tier 1)
+  const tier1Mat = new THREE.MeshStandardMaterial({ 
+    color: tierColors[0], 
+    metalness: 0.25, 
+    roughness: 0.45 
+  });
+  const tier1 = new THREE.Mesh(new THREE.CylinderGeometry(1.35, 1.35, 0.6, 36), tier1Mat);
+  tier1.position.y = 0.0;
   cakeGroup.add(tier1);
 
-  // Mid Tier
-  const tier2Mat = new THREE.MeshStandardMaterial({ color: tierColors[1], metalness: 0.3, roughness: 0.5 });
-  const tier2 = new THREE.Mesh(new THREE.CylinderGeometry(0.85, 0.85, 0.45, 32), tier2Mat);
-  tier2.position.y = 0.22;
+  // Base Tier Frosting Trim (pearls around top and bottom)
+  const trim1Top = new THREE.Mesh(new THREE.TorusGeometry(1.35, 0.045, 16, 40), frostingMat);
+  trim1Top.rotation.x = Math.PI / 2;
+  trim1Top.position.y = 0.3;
+  cakeGroup.add(trim1Top);
+
+  const trim1Bot = new THREE.Mesh(new THREE.TorusGeometry(1.36, 0.04, 16, 40), frostingMat);
+  trim1Bot.rotation.x = Math.PI / 2;
+  trim1Bot.position.y = -0.3;
+  cakeGroup.add(trim1Bot);
+
+  // Mid Tier (Tier 2)
+  const tier2Mat = new THREE.MeshStandardMaterial({ 
+    color: tierColors[1], 
+    metalness: 0.25, 
+    roughness: 0.4 
+  });
+  const tier2 = new THREE.Mesh(new THREE.CylinderGeometry(0.95, 0.95, 0.52, 36), tier2Mat);
+  tier2.position.y = 0.56;
   cakeGroup.add(tier2);
 
-  // Top Tier
-  const tier3Mat = new THREE.MeshStandardMaterial({ color: tierColors[2], metalness: 0.4, roughness: 0.4 });
-  const tier3 = new THREE.Mesh(new THREE.CylinderGeometry(0.55, 0.55, 0.4, 32), tier3Mat);
-  tier3.position.y = 0.64;
+  // Mid Tier Frosting Trim
+  const trim2Top = new THREE.Mesh(new THREE.TorusGeometry(0.95, 0.04, 16, 36), frostingMat);
+  trim2Top.rotation.x = Math.PI / 2;
+  trim2Top.position.y = 0.82;
+  cakeGroup.add(trim2Top);
+
+  // Top Tier (Tier 3)
+  const tier3Mat = new THREE.MeshStandardMaterial({ 
+    color: tierColors[2], 
+    metalness: 0.3, 
+    roughness: 0.35 
+  });
+  const tier3 = new THREE.Mesh(new THREE.CylinderGeometry(0.6, 0.6, 0.45, 36), tier3Mat);
+  tier3.position.y = 1.05;
   cakeGroup.add(tier3);
 
+  // Top Tier Frosting Swirl / Trim
+  const trim3Top = new THREE.Mesh(new THREE.TorusGeometry(0.6, 0.038, 16, 32), frostingMat);
+  trim3Top.rotation.x = Math.PI / 2;
+  trim3Top.position.y = 1.275;
+  cakeGroup.add(trim3Top);
+
+  // Strawberries / Cherries on Top
+  const berryMat = new THREE.MeshStandardMaterial({ color: 0xef4444, roughness: 0.2, metalness: 0.1 });
+  for (let b = 0; b < 6; b++) {
+    const angle = (b / 6) * Math.PI * 2;
+    const berry = new THREE.Mesh(new THREE.SphereGeometry(0.065, 16, 16), berryMat);
+    berry.position.set(Math.cos(angle) * 0.42, 1.31, Math.sin(angle) * 0.42);
+    cakeGroup.add(berry);
+  }
+
   // 3 Candles on Top
-  const candlePositions = [-0.25, 0, 0.25];
+  const candlePositions = [-0.22, 0, 0.22];
   cakeFlames = [];
 
   candlePositions.forEach((cx, i) => {
+    // Candle Body (Golden / Striped)
     const cBody = new THREE.Mesh(
-      new THREE.CylinderGeometry(0.04, 0.04, 0.3, 16),
-      new THREE.MeshStandardMaterial({ color: i === 1 ? 0xffffff : currentTheme.threeLight1 })
+      new THREE.CylinderGeometry(0.042, 0.042, 0.32, 16),
+      new THREE.MeshStandardMaterial({ 
+        color: i === 1 ? 0xfffae6 : (currentTheme.threeLight1 || 0xffd700),
+        metalness: 0.4,
+        roughness: 0.2
+      })
     );
-    cBody.position.set(cx, 0.98, (i === 1 ? 0.05 : -0.05));
+    cBody.position.set(cx, 1.43, (i === 1 ? 0.04 : -0.04));
     cakeGroup.add(cBody);
 
+    // Candle Wick
+    const wick = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.008, 0.008, 0.05, 8),
+      new THREE.MeshBasicMaterial({ color: 0x222222 })
+    );
+    wick.position.set(cx, 1.61, (i === 1 ? 0.04 : -0.04));
+    cakeGroup.add(wick);
+
     // Candle Flame Mesh
-    const flameMat = new THREE.MeshBasicMaterial({ color: 0xffdd44 });
-    const flame = new THREE.Mesh(new THREE.ConeGeometry(0.06, 0.16, 16), flameMat);
-    flame.position.set(cx, 1.18, (i === 1 ? 0.05 : -0.05));
+    const flameMat = new THREE.MeshBasicMaterial({ color: 0xffe066 });
+    const flame = new THREE.Mesh(new THREE.ConeGeometry(0.065, 0.18, 16), flameMat);
+    flame.position.set(cx, 1.70, (i === 1 ? 0.04 : -0.04));
     cakeGroup.add(flame);
     cakeFlames.push(flame);
   });
 
-  // Plate
-  const plate = new THREE.Mesh(
-    new THREE.CylinderGeometry(1.45, 1.45, 0.08, 32),
-    new THREE.MeshStandardMaterial({ color: 0xffffff, metalness: 0.85, roughness: 0.1 })
-  );
-  plate.position.y = -0.52;
+  // Candle Glow PointLight
+  candleLight = new THREE.PointLight(0xffaa33, 2.8, 7);
+  candleLight.position.set(0, 1.75, 0);
+  cakeGroup.add(candleLight);
+
+  // Luxury Plate & Pedestal Stand
+  const plateMat = new THREE.MeshStandardMaterial({ 
+    color: 0xffffff, 
+    metalness: 0.9, 
+    roughness: 0.1 
+  });
+  const plate = new THREE.Mesh(new THREE.CylinderGeometry(1.6, 1.5, 0.08, 36), plateMat);
+  plate.position.y = -0.34;
   cakeGroup.add(plate);
 
-  cakeGroup.scale.set(0.9, 0.9, 0.9);
+  const pedestal = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.9, 0.25, 32), plateMat);
+  pedestal.position.y = -0.48;
+  cakeGroup.add(pedestal);
+
+  cakeGroup.scale.set(0.92, 0.92, 0.92);
   cakeGroup.visible = false;
-  scene.add(cakeGroup);
+  scene.add(cakeGroup); // Added directly to scene!
+
+  // 5. 3D Orbiting Photo Cards around the Cake (Double Sided Images)
+  setup3DOrbitPhotoCards();
 
   // Event Listeners
   window.addEventListener('resize', onWindowResize);
@@ -452,6 +533,124 @@ function initThreeScene() {
   window.addEventListener('touchmove', onTouchMove, { passive: true });
 
   animateThree();
+}
+
+// ===== 3D ORBIT PHOTO CARDS AROUND CAKE (DOUBLE-SIDED THREE.JS WEBGL) =====
+let orbitPhotosGroup = null;
+let orbitPhotoCards = [];
+
+function setup3DOrbitPhotoCards() {
+  if (!scene) return;
+  if (orbitPhotosGroup) {
+    scene.remove(orbitPhotosGroup);
+  }
+
+  orbitPhotosGroup = new THREE.Group();
+  orbitPhotosGroup.position.set(0, 0.05, 0); // Centered with cakeGroup
+  orbitPhotoCards = [];
+
+  const photosList = (S.photos && S.photos.length > 0) ? S.photos : (DEFAULT_SETTINGS.photos || []);
+  const textureLoader = new THREE.TextureLoader();
+  textureLoader.setCrossOrigin('anonymous');
+
+  const radius = 2.65; // Wide orbit cleanly circling around the 4 sides of the cake
+  const totalCards = 4;
+
+  for (let i = 0; i < totalCards; i++) {
+    const cardPivot = new THREE.Group();
+    const angle = (i / totalCards) * Math.PI * 2;
+    cardPivot.position.set(Math.cos(angle) * radius, 0.65, Math.sin(angle) * radius);
+    cardPivot.userData = {
+      baseAngle: angle,
+      radius: radius,
+      baseY: 0.65,
+      phase: i * 1.5
+    };
+
+    // 1. Sleek Glass / Golden Frame
+    const frameGeo = new THREE.BoxGeometry(0.88, 1.18, 0.03);
+    const frameMat = new THREE.MeshStandardMaterial({
+      color: 0xffffff,
+      metalness: 0.88,
+      roughness: 0.15,
+      emissive: currentTheme.threeLight1 || 0xda5ec9,
+      emissiveIntensity: 0.25
+    });
+    const frameMesh = new THREE.Mesh(frameGeo, frameMat);
+    cardPivot.add(frameMesh);
+
+    // 2. Glowing Neon Border Outline
+    const edgeGeo = new THREE.EdgesGeometry(frameGeo);
+    const edgeMat = new THREE.LineBasicMaterial({
+      color: currentTheme.threeLight2 || 0xfd8ae0,
+      linewidth: 2
+    });
+    const edgeLine = new THREE.LineSegments(edgeGeo, edgeMat);
+    cardPivot.add(edgeLine);
+
+    // 3. Dynamic Canvas Fallback Texture
+    const canvas = document.createElement('canvas');
+    canvas.width = 300; canvas.height = 420;
+    const ctx = canvas.getContext('2d');
+    const grad = ctx.createLinearGradient(0, 0, 300, 420);
+    grad.addColorStop(0, '#8b5cf6');
+    grad.addColorStop(1, '#ec4899');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, 300, 420);
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 36px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('✨ Memory ' + (i + 1), 150, 210);
+    const defaultTex = new THREE.CanvasTexture(canvas);
+
+    // Front Picture Material
+    const picMatFront = new THREE.MeshStandardMaterial({
+      map: defaultTex,
+      metalness: 0.05,
+      roughness: 0.25,
+      side: THREE.FrontSide
+    });
+
+    // Back Picture Material
+    const picMatBack = new THREE.MeshStandardMaterial({
+      map: defaultTex,
+      metalness: 0.05,
+      roughness: 0.25,
+      side: THREE.FrontSide
+    });
+
+    const imgSrc = photosList[i % photosList.length];
+    if (imgSrc) {
+      textureLoader.load(imgSrc, (loadedTex) => {
+        loadedTex.generateMipmaps = true;
+        loadedTex.minFilter = THREE.LinearMipmapLinearFilter;
+        picMatFront.map = loadedTex;
+        picMatFront.needsUpdate = true;
+        picMatBack.map = loadedTex;
+        picMatBack.needsUpdate = true;
+      }, undefined, () => {});
+    }
+
+    const picGeo = new THREE.PlaneGeometry(0.82, 1.12);
+
+    // 4. Front Picture Mesh (facing +Z)
+    const picMeshFront = new THREE.Mesh(picGeo, picMatFront);
+    picMeshFront.position.z = 0.016;
+    cardPivot.add(picMeshFront);
+
+    // 5. Back Picture Mesh (facing -Z, rotated Math.PI so image is properly oriented)
+    const picMeshBack = new THREE.Mesh(picGeo, picMatBack);
+    picMeshBack.position.z = -0.016;
+    picMeshBack.rotation.y = Math.PI;
+    cardPivot.add(picMeshBack);
+
+    orbitPhotosGroup.add(cardPivot);
+    orbitPhotoCards.push(cardPivot);
+  }
+
+  orbitPhotosGroup.visible = false;
+  scene.add(orbitPhotosGroup);
 }
 
 function onWindowResize() {
@@ -467,22 +666,15 @@ function onMouseMove(e) {
 
   const glow = document.getElementById('cursorGlow');
   if (glow) {
-    glow.style.left = e.clientX + 'px';
-    glow.style.top = e.clientY + 'px';
+    glow.style.left = `${e.clientX}px`;
+    glow.style.top = `${e.clientY}px`;
   }
 }
 
 function onTouchMove(e) {
   if (e.touches.length > 0) {
-    const t = e.touches[0];
-    mouseX = (t.clientX / window.innerWidth - 0.5) * 2;
-    mouseY = (t.clientY / window.innerHeight - 0.5) * 2;
-
-    const glow = document.getElementById('cursorGlow');
-    if (glow) {
-      glow.style.left = t.clientX + 'px';
-      glow.style.top = t.clientY + 'px';
-    }
+    mouseX = (e.touches[0].clientX / window.innerWidth - 0.5) * 2;
+    mouseY = (e.touches[0].clientY / window.innerHeight - 0.5) * 2;
   }
 }
 
@@ -518,17 +710,29 @@ function animateThree() {
 
   // Animate 3D Cake & Candle Flames Flicker
   if (cakeGroup && cakeGroup.visible) {
-    cakeGroup.rotation.y = time * 0.25;
+    cakeGroup.rotation.y = time * 0.18;
 
     if (candlesLit) {
       cakeFlames.forEach((flame, idx) => {
-        const flick = 1 + Math.sin(time * 18 + idx * 3) * 0.25;
+        const flick = 1 + Math.sin(time * 18 + idx * 3) * 0.22;
         flame.scale.set(flick, flick * (1 + Math.cos(time * 15) * 0.2), flick);
       });
       if (candleLight) {
-        candleLight.intensity = 2.2 + Math.sin(time * 20) * 0.5;
+        candleLight.intensity = 2.6 + Math.sin(time * 20) * 0.5;
       }
     }
+  }
+
+  // Animate 3D Orbiting Photo Cards around Cake
+  if (orbitPhotosGroup && orbitPhotosGroup.visible) {
+    orbitPhotosGroup.rotation.y = time * 0.22;
+
+    orbitPhotoCards.forEach((card) => {
+      // Gentle floating bob
+      card.position.y = card.userData.baseY + Math.sin(time * 1.8 + card.userData.phase) * 0.08;
+      // Gentle self-spin so both front and back images are revealed dynamically
+      card.rotation.y = time * 0.45 + card.userData.phase;
+    });
   }
 
   // Smooth Camera Director Lerping
@@ -553,6 +757,12 @@ function goToScene(index) {
   const panels = document.querySelectorAll('.scene-panel');
   panels.forEach((p, i) => {
     p.classList.toggle('active', i === index);
+  });
+
+  // Update Navigation Dots
+  const dots = document.querySelectorAll('.nav-dot');
+  dots.forEach((dot, i) => {
+    dot.classList.toggle('active', i === index);
   });
 
   // Animate scene content fade-in
@@ -580,21 +790,35 @@ function goToScene(index) {
     targetCameraX = 0; targetCameraY = 0; targetCameraZ = 6.2; targetLookAtY = 0;
     if (ringGroup) ringGroup.visible = true;
     if (cakeGroup) cakeGroup.visible = false;
+    if (orbitPhotosGroup) orbitPhotosGroup.visible = false;
   } else if (index === 1) {
-    targetCameraX = 0; targetCameraY = -0.2; targetCameraZ = 4.2; targetLookAtY = -0.4;
+    targetCameraX = 0; targetCameraY = 0.48; targetCameraZ = 5.4; targetLookAtY = 0.35;
     if (ringGroup) ringGroup.visible = false;
     if (cakeGroup) {
       cakeGroup.visible = true;
-      gsap.fromTo(cakeGroup.scale, { x: 0.1, y: 0.1, z: 0.1 }, { x: 1, y: 1, z: 1, duration: 0.8, ease: 'back.out(1.8)' });
+      if (typeof gsap !== 'undefined') {
+        gsap.fromTo(cakeGroup.scale, { x: 0.1, y: 0.1, z: 0.1 }, { x: 0.92, y: 0.92, z: 0.92, duration: 0.9, ease: 'back.out(1.8)' });
+      }
+    }
+    if (orbitPhotosGroup) {
+      orbitPhotosGroup.visible = true;
+      if (typeof gsap !== 'undefined') {
+        gsap.fromTo(orbitPhotosGroup.scale, { x: 0.1, y: 0.1, z: 0.1 }, { x: 1, y: 1, z: 1, duration: 1.0, ease: 'back.out(1.6)' });
+      }
     }
   } else if (index === 2) {
     targetCameraX = 0; targetCameraY = 0.3; targetCameraZ = 5.5; targetLookAtY = 0;
     if (ringGroup) ringGroup.visible = true;
     if (cakeGroup) cakeGroup.visible = false;
+    if (orbitPhotosGroup) orbitPhotosGroup.visible = false;
+    if (typeof startLetterTyping === 'function') {
+      startLetterTyping();
+    }
   } else if (index === 3) {
     targetCameraX = 0; targetCameraY = -0.1; targetCameraZ = 5.0; targetLookAtY = 0;
     if (ringGroup) ringGroup.visible = true;
     if (cakeGroup) cakeGroup.visible = false;
+    if (orbitPhotosGroup) orbitPhotosGroup.visible = false;
   }
 }
 
@@ -883,7 +1107,12 @@ function triggerCutCake() {
   cakeCut = true;
   sfx.playSlice();
 
-  launchConfetti(150);
+  if (cakeGroup) {
+    gsap.to(cakeGroup.position, { y: 0.2, duration: 0.2, yoyo: true, repeat: 1, ease: 'power2.out' });
+    gsap.to(cakeGroup.rotation, { y: cakeGroup.rotation.y + 0.65, duration: 0.9, ease: 'back.out(2)' });
+  }
+
+  launchConfetti(160);
   if (cutBtn) {
     cutBtn.innerHTML = '<span class="cut-btn-glow"></span><span>🍰</span><span>Cake Served with Love!</span><span>💕</span>';
     cutBtn.style.background = 'linear-gradient(135deg, #10b981, #34d399)';
