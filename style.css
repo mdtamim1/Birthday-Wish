@@ -652,13 +652,16 @@ html, body {
   font-size: clamp(2.8rem, 10vw, 5.8rem);
   font-family: var(--font-script);
   font-weight: 700;
-  color: #fff;
-  background: linear-gradient(135deg, #ffffff 0%, var(--theme-accent) 40%, var(--theme-secondary) 80%, #ffffff 100%);
+  color: #ffffff;
+  background: linear-gradient(135deg, #ffffff 0%, #ffe4e6 30%, #fb7185 75%, #ffffff 100%);
   background-size: 200% auto;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
-  filter: drop-shadow(0 0 18px var(--glass-glow));
+  filter: 
+    drop-shadow(0 2px 4px rgba(0, 0, 0, 0.95))
+    drop-shadow(0 0 16px var(--theme-secondary))
+    drop-shadow(0 0 35px var(--glass-glow));
   padding: 0 1px;
 }
 
@@ -667,17 +670,23 @@ html, body {
   font-family: var(--font-display);
   font-weight: 900;
   text-transform: uppercase;
-  color: #fff;
-  background: linear-gradient(180deg, #ffffff 0%, var(--theme-accent) 22%, var(--theme-primary) 58%, var(--theme-secondary) 85%, var(--theme-gold-dark) 100%);
+  color: #ffffff;
+  background: linear-gradient(180deg, 
+    #ffffff 0%, 
+    #fff5f7 20%, 
+    var(--theme-accent) 45%, 
+    var(--theme-secondary) 75%, 
+    var(--theme-gold-dark, #831843) 100%
+  );
   background-size: 200% auto;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
   filter: 
-    drop-shadow(0 2px 4px rgba(0, 0, 0, 0.9))
-    drop-shadow(0 6px 20px var(--glass-glow))
-    drop-shadow(0 0 30px var(--theme-glow));
-  letter-spacing: 0.03em;
+    drop-shadow(0 3px 6px rgba(0, 0, 0, 0.95))
+    drop-shadow(0 10px 28px rgba(0, 0, 0, 0.85))
+    drop-shadow(0 0 24px var(--theme-glow));
+  letter-spacing: 0.04em;
   padding: 0 2px;
 }
 
@@ -685,12 +694,14 @@ html, body {
   font-size: clamp(2rem, 7.5vw, 4.2rem);
   font-family: var(--font-script);
   font-weight: 700;
-  color: #fff;
-  background: linear-gradient(135deg, #ffffff 0%, var(--theme-accent) 45%, var(--theme-secondary) 90%);
+  color: #ffffff;
+  background: linear-gradient(135deg, #ffffff 0%, #ffe4e6 35%, var(--theme-accent) 70%, #ffffff 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
-  filter: drop-shadow(0 0 20px var(--theme-glow));
+  filter: 
+    drop-shadow(0 2px 4px rgba(0, 0, 0, 0.95))
+    drop-shadow(0 0 18px var(--theme-glow));
   padding: 0 1px;
 }
 
@@ -1493,19 +1504,20 @@ html, body {
 }
 
 .gift-ell-1 {
-  width: 260px;
-  height: 80px;
-  border: 1px solid rgba(218, 94, 201, 0.3);
-  box-shadow: 0 0 18px rgba(218, 94, 201, 0.1), inset 0 0 18px rgba(218, 94, 201, 0.05);
-  animation: ellOrbit1 9s linear infinite;
+  width: 280px;
+  height: 90px;
+  border: 1px solid rgba(244, 114, 182, 0.2);
+  box-shadow: 0 0 25px rgba(244, 114, 182, 0.15), inset 0 0 25px rgba(244, 114, 182, 0.08);
+  animation: ellOrbit1 12s linear infinite;
 }
 
 .gift-ell-2 {
-  width: 340px;
-  height: 105px;
-  top: 15px;
-  border: 1px solid rgba(126, 34, 206, 0.2);
-  animation: ellOrbit2 14s linear infinite;
+  width: 360px;
+  height: 115px;
+  top: 10px;
+  border: 1px solid rgba(219, 39, 119, 0.15);
+  box-shadow: 0 0 35px rgba(219, 39, 119, 0.12);
+  animation: ellOrbit2 18s linear infinite;
 }
 
 @keyframes ellOrbit1 {

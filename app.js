@@ -543,37 +543,110 @@ function initThreeScene() {
   particlesMesh = new THREE.Points(particleGeo, particleMat);
   scene.add(particlesMesh);
 
-  // 2. 3D Orbiting Golden Torus Rings & Crystals
+  // Helper: Create Smooth 3D Heart Geometry
+  function create3DHeartGeometry(size = 0.5) {
+    const shape = new THREE.Shape();
+    const d = size;
+    // Parametric rounded heart contour
+    shape.moveTo(0, 0.35 * d);
+    shape.bezierCurveTo(0, 0.65 * d, -0.55 * d, 0.85 * d, -0.55 * d, 0.38 * d);
+    shape.bezierCurveTo(-0.55 * d, 0.08 * d, -0.28 * d, -0.28 * d, 0, -0.65 * d);
+    shape.bezierCurveTo(0.28 * d, -0.28 * d, 0.55 * d, 0.08 * d, 0.55 * d, 0.38 * d);
+    shape.bezierCurveTo(0.55 * d, 0.85 * d, 0, 0.65 * d, 0, 0.35 * d);
+
+    const extrudeSettings = {
+      depth: 0.12 * d,
+      bevelEnabled: true,
+      bevelSegments: 4,
+      steps: 1,
+      bevelSize: 0.05 * d,
+      bevelThickness: 0.05 * d
+    };
+
+    const geo = new THREE.ExtrudeGeometry(shape, extrudeSettings);
+    geo.center();
+    return geo;
+  }
+
+  // 2. 3D Floating Royal Gemstone Hearts & Stardust Crystals
   ringGroup = new THREE.Group();
 
-  const torusMat = new THREE.MeshStandardMaterial({
-    color: currentTheme.threeLight1,
-    metalness: 0.9,
-    roughness: 0.15,
-    wireframe: false
-  });
+  // Multi-sized 3D Floating Hearts orbiting in a majestic framing halo around the scene
+  const heartSizes = [0.85, 1.1, 0.7, 0.95, 0.8, 1.2, 0.65, 0.9, 0.75, 1.05, 0.6, 0.85];
+  const heartCount = heartSizes.length;
 
-  const ring1 = new THREE.Mesh(new THREE.TorusGeometry(2.4, 0.03, 16, 100), torusMat);
-  const ring2 = new THREE.Mesh(new THREE.TorusGeometry(1.8, 0.02, 16, 100), torusMat);
-  ring2.rotation.x = Math.PI / 3;
-  ring2.rotation.y = Math.PI / 4;
+  for (let h = 0; h < heartCount; h++) {
+    const size = heartSizes[h];
+    const geo = create3DHeartGeometry(size);
 
-  ringGroup.add(ring1);
-  ringGroup.add(ring2);
+    // Luxury Crystal Material with Refraction & Clearcoat
+    const isRuby = h % 3 === 0;
+    const isGold = h % 3 === 1;
+
+    const heartMat = new THREE.MeshPhysicalMaterial({
+      color: isRuby ? (currentTheme.threeLight2 || 0xf43f5e) : (isGold ? 0xffd166 : (currentTheme.threeLight1 || 0xd946ef)),
+      emissive: isRuby ? 0x9f1239 : (isGold ? 0xb45309 : 0x701a75),
+      emissiveIntensity: 0.28,
+      metalness: 0.18,
+      roughness: 0.12,
+      transmission: 0.55,
+      thickness: 0.5,
+      ior: 1.52,
+      transparent: true,
+      opacity: 0.86,
+      clearcoat: 1.0,
+      clearcoatRoughness: 0.06
+    });
+
+    const heartMesh = new THREE.Mesh(geo, heartMat);
+
+    // Golden Filigree Edge Outline
+    const edgeGeo = new THREE.EdgesGeometry(geo, 30);
+    const edgeMat = new THREE.LineBasicMaterial({
+      color: 0xffe699,
+      transparent: true,
+      opacity: 0.65
+    });
+    const edgeLine = new THREE.LineSegments(edgeGeo, edgeMat);
+    heartMesh.add(edgeLine);
+
+    // Position in a wide framing ellipse around the typography (center text remains clean & readable)
+    const angle = (Math.PI * 2 / heartCount) * h;
+    const radX = 3.2 + (h % 3) * 0.7; // Wide horizontal radius
+    const radY = 2.1 + (h % 2) * 0.5; // Vertical radius
+    const x = Math.cos(angle) * radX;
+    const y = Math.sin(angle) * radY + 0.1;
+    const z = -1.2 - ((h % 4) * 0.7); // Placed at pleasant background depth (-1.2 to -3.3)
+
+    heartMesh.position.set(x, y, z);
+    heartMesh.rotation.z = (Math.random() - 0.5) * 0.5;
+    heartMesh.rotation.y = (Math.random() - 0.5) * 0.8;
+    heartMesh.userData = {
+      isHeart: true,
+      phase: h * 1.3,
+      baseY: y,
+      speed: 0.4 + (h % 3) * 0.25
+    };
+
+    ringGroup.add(heartMesh);
+  }
 
   // Floating 3D Crystal Diamonds
   const crystalMat = new THREE.MeshStandardMaterial({
-    color: currentTheme.threeLight2,
-    metalness: 0.8,
-    roughness: 0.1,
+    color: 0xffffff,
+    emissive: 0xffe066,
+    emissiveIntensity: 0.25,
+    metalness: 0.95,
+    roughness: 0.08,
     transparent: true,
-    opacity: 0.9
+    opacity: 0.95
   });
 
   for (let c = 0; c < 8; c++) {
-    const crystal = new THREE.Mesh(new THREE.OctahedronGeometry(0.18, 0), crystalMat);
-    const angle = (Math.PI * 2 / 8) * c;
-    crystal.position.set(Math.cos(angle) * 2.1, Math.sin(angle) * 2.1, (Math.random() - 0.5) * 0.8);
+    const crystal = new THREE.Mesh(new THREE.OctahedronGeometry(0.16, 0), crystalMat);
+    const angle = (Math.PI * 2 / 8) * c + 0.3;
+    crystal.position.set(Math.cos(angle) * 4.2, Math.sin(angle) * 2.8, -1.5 - (Math.random() * 1.8));
+    crystal.userData = { isCrystal: true, phase: c * 1.1, baseY: Math.sin(angle) * 2.8 };
     ringGroup.add(crystal);
   }
 
@@ -913,11 +986,22 @@ function animateThree() {
     particlesMesh.rotation.x = time * 0.01;
   }
 
-  // Rotate Golden Rings & Crystals
+  // Rotate 3D Floating Love Hearts & Crystals
   if (ringGroup && ringGroup.visible) {
-    ringGroup.rotation.z = time * 0.15;
-    ringGroup.rotation.y = time * 0.2;
-    ringGroup.rotation.x = Math.sin(time * 0.4) * 0.2;
+    ringGroup.rotation.y = time * 0.14;
+    ringGroup.rotation.z = Math.sin(time * 0.25) * 0.08;
+
+    ringGroup.children.forEach(obj => {
+      if (obj.userData && obj.userData.isHeart) {
+        obj.rotation.y = time * (obj.userData.speed || 0.45) + obj.userData.phase;
+        obj.rotation.x = Math.sin(time * 0.65 + obj.userData.phase) * 0.18;
+        obj.position.y = obj.userData.baseY + Math.sin(time * 1.35 + obj.userData.phase) * 0.14;
+      } else if (obj.userData && obj.userData.isCrystal) {
+        obj.rotation.y = time * 0.75 + obj.userData.phase;
+        obj.rotation.z = time * 0.45;
+        obj.position.y = obj.userData.baseY + Math.sin(time * 1.2 + obj.userData.phase) * 0.12;
+      }
+    });
   }
 
   // Animate Balloons Sway
@@ -1105,6 +1189,16 @@ function applyTheme(themeKey) {
   // Update Three.js lights and materials
   if (pointLight1) pointLight1.color.setHex(t.threeLight1);
   if (pointLight2) pointLight2.color.setHex(t.threeLight2);
+
+  if (ringGroup) {
+    ringGroup.children.forEach((obj, idx) => {
+      if (obj.material && obj.userData && obj.userData.isHeart) {
+        const hex = (idx % 2 === 0) ? t.threeLight1 : t.threeLight2;
+        obj.material.color.setHex(hex);
+        obj.material.emissive.setHex(hex);
+      }
+    });
+  }
 
   // Update theme pill label & swatch
   const activeLabel = document.getElementById('activeThemeLabel');
