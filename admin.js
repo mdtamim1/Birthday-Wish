@@ -34,7 +34,57 @@ function loadSettings() {
 }
 
 function saveSettings(data) {
-  localStorage.setItem('birthdaySettings', JSON.stringify(data));
+  try {
+    localStorage.setItem('birthdaySettings', JSON.stringify(data));
+    return true;
+  } catch (err) {
+    console.error('LocalStorage save error:', err);
+    if (err.name === 'QuotaExceededError' || err.code === 22) {
+      showToast('⚠️ Storage limit reached! Please remove or use smaller photos.', 'error');
+    } else {
+      showToast('❌ Error saving settings.', 'error');
+    }
+    return false;
+  }
+}
+
+// ===== SMART CLIENT-SIDE IMAGE COMPRESSION (Prevents LocalStorage Quota Errors) =====
+function compressImage(file, maxWidth = 800, maxHeight = 800, quality = 0.82) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        let width = img.width;
+        let height = img.height;
+
+        if (width > height) {
+          if (width > maxWidth) {
+            height = Math.round((height * maxWidth) / width);
+            width = maxWidth;
+          }
+        } else {
+          if (height > maxHeight) {
+            width = Math.round((width * maxHeight) / height);
+            height = maxHeight;
+          }
+        }
+
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, width, height);
+
+        const dataUrl = canvas.toDataURL('image/jpeg', quality);
+        resolve(dataUrl);
+      };
+      img.onerror = () => reject(new Error('Image decode error'));
+      img.src = e.target.result;
+    };
+    reader.onerror = () => reject(new Error('File read error'));
+    reader.readAsDataURL(file);
+  });
 }
 
 let S = loadSettings();
@@ -200,17 +250,20 @@ function setupPhotoUpload(uploadAreaId, inputId, previewWrapId, previewImgId, pl
   });
 }
 
-function processImageFile(file, storageKey, previewWrap, previewImg, placeholder) {
-  if (file.size > 5 * 1024 * 1024) { showToast('❌ File too large (max 5MB)', 'error'); return; }
-  const reader = new FileReader();
-  reader.onload = (e) => {
-    S[storageKey] = e.target.result;
-    previewImg.src = e.target.result;
+async function processImageFile(file, storageKey, previewWrap, previewImg, placeholder) {
+  try {
+    showToast('⏳ Processing photo...', 'success');
+    const compressedDataUrl = await compressImage(file, 800, 800, 0.82);
+    S[storageKey] = compressedDataUrl;
+    previewImg.src = compressedDataUrl;
     previewWrap.style.display = 'block';
     placeholder.style.display = 'none';
-    showToast('📸 Photo uploaded!', 'success');
-  };
-  reader.readAsDataURL(file);
+    saveSettings(S);
+    showToast('📸 Photo uploaded & optimized!', 'success');
+  } catch (err) {
+    console.error(err);
+    showToast('❌ Failed to process image', 'error');
+  }
 }
 
 function showPhotoPreview(src, type) {
@@ -395,27 +448,29 @@ document.head.appendChild(style);
   });
   multiInput.addEventListener('change', function() { processMultiFiles(multiInput.files); });
 
-  function processMultiFiles(files) {
+  async function processMultiFiles(files) {
     if (!S.photos) S.photos = [];
-    var remaining = 10 - S.photos.length;
-    var toProcess = Math.min(files.length, remaining);
+    const remaining = 10 - S.photos.length;
+    const toProcess = Math.min(files.length, remaining);
     if (toProcess <= 0) { showToast('Max 10 photos allowed', 'error'); return; }
-    var loaded = 0;
-    for (var i = 0; i < toProcess; i++) {
-      (function(file) {
-        if (file.size > 5 * 1024 * 1024) { showToast('File too large: ' + file.name, 'error'); return; }
-        var reader = new FileReader();
-        reader.onload = function(ev) {
-          S.photos.push(ev.target.result);
-          loaded++;
-          if (loaded === toProcess) {
-            saveSettings(S);
-            refreshGrid();
-            showToast('Added ' + toProcess + ' photo(s)!', 'success');
-          }
-        };
-        reader.readAsDataURL(file);
-      })(files[i]);
+    
+    showToast(`⏳ Optimizing ${toProcess} photo(s)...`, 'success');
+    let added = 0;
+
+    for (let i = 0; i < toProcess; i++) {
+      try {
+        const compressed = await compressImage(files[i], 800, 800, 0.82);
+        S.photos.push(compressed);
+        added++;
+      } catch (err) {
+        console.error('Photo optimization error:', err);
+      }
+    }
+
+    if (added > 0) {
+      saveSettings(S);
+      refreshGrid();
+      showToast(`📸 Added and optimized ${added} photo(s)!`, 'success');
     }
     multiInput.value = '';
   }
