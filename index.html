@@ -39,6 +39,9 @@
 
 <audio id="bgMusic" loop></audio>
 
+<!-- Ambient Cursor Glow Orb -->
+<div class="cursor-glow-orb" id="cursorGlow"></div>
+
 <!-- ===== 3D VIP CELEBRATION INTRO OVERLAY ===== -->
 <div class="intro-overlay" id="introOverlay">
   <div class="intro-backdrop"></div>
@@ -98,6 +101,45 @@
 
       <!-- Subtitle Quote -->
       <p class="special-quote" id="specialText"></p>
+
+      <!-- Magical Live Time Traveler & Celestial Clock -->
+      <div class="magic-clock-card" id="magicClockCard" style="display:none;">
+        <div class="magic-clock-shine"></div>
+        <div class="magic-clock-header">
+          <span class="magic-clock-icon">⏳</span>
+          <span class="magic-clock-title">CELEBRATING EVERY PRECIOUS MOMENT</span>
+          <span class="magic-clock-icon">✨</span>
+        </div>
+        
+        <div class="magic-clock-grid">
+          <!-- Years -->
+          <div class="clock-stat-pill">
+            <span class="stat-num" id="clockYears">0</span>
+            <span class="stat-label">Years of Joy</span>
+          </div>
+          <!-- Days -->
+          <div class="clock-stat-pill">
+            <span class="stat-num" id="clockDays">0</span>
+            <span class="stat-label">Days on Earth</span>
+          </div>
+          <!-- Hours -->
+          <div class="clock-stat-pill">
+            <span class="stat-num" id="clockHours">0</span>
+            <span class="stat-label">Hours of Smiles</span>
+          </div>
+          <!-- Live Seconds -->
+          <div class="clock-stat-pill clock-live-pill">
+            <span class="stat-num live-ticker" id="clockSeconds">0</span>
+            <span class="stat-label">Seconds of Magic 🪄</span>
+          </div>
+        </div>
+
+        <!-- Next Birthday Countdown Milestone -->
+        <div class="magic-milestone-footer" id="clockMilestone">
+          <span class="milestone-sparkle">🌟</span>
+          <span class="milestone-text" id="clockNextBdayText">Next Birthday in Calculating...</span>
+        </div>
+      </div>
 
       <!-- Refined Celestial Flow Indicator -->
       <div class="flow-indicator" id="flowNext1" data-next="1">
@@ -203,6 +245,55 @@
           <div class="wisher-sign-wrap" id="wisherSection" style="display:none;">
             <p class="wisher-from">Forever with love,</p>
             <p class="wisher-signature" id="wisherName"></p>
+          </div>
+        </div>
+      </div>
+
+      <!-- 🎙️ Luxury Voice Note Capsule Player -->
+      <div class="voice-note-card" id="voiceNoteCard" style="display:none;">
+        <audio id="voiceAudioPlayer" preload="none"></audio>
+        <div class="voice-note-aura"></div>
+        
+        <div class="voice-note-inner">
+          <!-- Play / Pause Button with Circular Glow -->
+          <button class="voice-play-btn" id="btnVoicePlay" aria-label="Play Voice Message">
+            <span class="voice-play-icon" id="voicePlayIcon">▶</span>
+            <span class="voice-btn-ring"></span>
+          </button>
+
+          <!-- Voice Info & Dynamic Waveform Visualizer -->
+          <div class="voice-content-wrap">
+            <div class="voice-top-row">
+              <span class="voice-tag">🎙️ VOICE MESSAGE</span>
+              <span class="voice-duration" id="voiceDurationDisplay">0:00</span>
+            </div>
+            
+            <h4 class="voice-custom-title" id="voiceTitleDisplay">A Special Message from the Heart 💖</h4>
+            
+            <!-- Animated Waveform Visualizer Bars -->
+            <div class="voice-wave-container" id="voiceWaveContainer">
+              <span class="voice-bar" style="--h: 35%;"></span>
+              <span class="voice-bar" style="--h: 65%;"></span>
+              <span class="voice-bar" style="--h: 100%;"></span>
+              <span class="voice-bar" style="--h: 45%;"></span>
+              <span class="voice-bar" style="--h: 85%;"></span>
+              <span class="voice-bar" style="--h: 55%;"></span>
+              <span class="voice-bar" style="--h: 90%;"></span>
+              <span class="voice-bar" style="--h: 40%;"></span>
+              <span class="voice-bar" style="--h: 75%;"></span>
+              <span class="voice-bar" style="--h: 95%;"></span>
+              <span class="voice-bar" style="--h: 50%;"></span>
+              <span class="voice-bar" style="--h: 80%;"></span>
+              <span class="voice-bar" style="--h: 65%;"></span>
+              <span class="voice-bar" style="--h: 35%;"></span>
+              <span class="voice-bar" style="--h: 70%;"></span>
+              <span class="voice-bar" style="--h: 40%;"></span>
+            </div>
+
+            <!-- Scrubbing Progress Bar -->
+            <div class="voice-progress-track" id="voiceProgressTrack">
+              <div class="voice-progress-fill" id="voiceProgressFill"></div>
+            </div>
           </div>
         </div>
       </div>
@@ -328,6 +419,21 @@
           <span class="reel-sparkle">✨</span>
         </div>
         <div class="memories-reel-track" id="memoriesReelTrack"></div>
+      </div>
+
+      <!-- 📸 Royal Keepsake Souvenir Card Generator Section -->
+      <div class="souvenir-card-section" id="souvenirSection">
+        <button class="luxury-souvenir-btn" id="btnDownloadSouvenir" aria-label="Download Royal Keepsake Souvenir Card">
+          <span class="souvenir-glow-halo"></span>
+          <span class="souvenir-icon-wrap">
+            <span class="souvenir-icon">📸</span>
+          </span>
+          <span class="souvenir-text-group">
+            <span class="souvenir-title">Download Royal Keepsake Card</span>
+            <span class="souvenir-sub">Story Ready 9:16 HD Card for WhatsApp &amp; Instagram ✨</span>
+          </span>
+          <span class="souvenir-arrow">📥</span>
+        </button>
       </div>
 
       <!-- Subtle Begin Again -->

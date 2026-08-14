@@ -52,6 +52,9 @@ const DEFAULT_SETTINGS = {
   giftPhoto: '',
   showBirthdate: true,
   showGift: true,
+  voiceUrl: '',
+  showVoiceNote: true,
+  voiceTitle: 'A Special Voice Message from the Heart 💖',
   adminPassword: 'birthday123'
 };
 

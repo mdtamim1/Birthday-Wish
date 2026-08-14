@@ -113,7 +113,7 @@ const THEMES = {
 // ===== DEFAULT SETTINGS =====
 const DEFAULT_SETTINGS = {
   name: 'Your Name',
-  birthdate: '',
+  birthdate: '2002-08-15',
   specialText: 'May all your wildest dreams come true today and forever 🌸',
   birthdayNote: "On this magnificent day, I want you to know how truly special you are. Every smile of yours brings sunshine, and having you in this world is a blessing. Here's to a year overflowing with boundless joy, glorious memories, and endless love!",
   photo: '',
@@ -134,6 +134,9 @@ const DEFAULT_SETTINGS = {
   giftMessage: 'This gift is wrapped with all my heart and endless love for you! 💝',
   giftPhoto: '',
   showBirthdate: true,
+  voiceUrl: '',
+  showVoiceNote: true,
+  voiceTitle: 'A Special Voice Message from the Heart 💖',
 };
 
 function loadSettings() {
@@ -456,6 +459,25 @@ class SoundFX {
       gain.connect(this.ctx.destination);
       osc.start();
       osc.stop(this.ctx.currentTime + 0.4);
+    } catch {}
+  }
+  playSparklePop() {
+    this.init();
+    if (!this.ctx) return;
+    try {
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      osc.type = 'sine';
+      const freq = 1200 + Math.random() * 800;
+      osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(freq * 1.4, this.ctx.currentTime + 0.08);
+      osc.frequency.exponentialRampToValueAtTime(freq * 0.4, this.ctx.currentTime + 0.22);
+      gain.gain.setValueAtTime(0.08, this.ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.24);
+      osc.connect(gain);
+      gain.connect(this.ctx.destination);
+      osc.start();
+      osc.stop(this.ctx.currentTime + 0.25);
     } catch {}
   }
 }
@@ -953,6 +975,69 @@ function onWindowResize() {
   renderer.setSize(window.innerWidth, window.innerHeight);
 }
 
+// ===== 📱 MOBILE GYROSCOPE & MOUSE 3D PARALLAX =====
+let gyroTiltX = 0, gyroTiltY = 0;
+let currentGyroX = 0, currentGyroY = 0;
+let hasGyro = false;
+
+function handleDeviceOrientation(e) {
+  if (e.gamma === null || e.beta === null) return;
+  hasGyro = true;
+  // Gamma: left-to-right tilt (-90 to 90 deg) -> clamped to [-35, 35]
+  const clampedGamma = Math.max(-35, Math.min(35, e.gamma));
+  gyroTiltX = (clampedGamma / 35) * 1.1;
+
+  // Beta: front-to-back tilt (-180 to 180 deg). Standard holding angle is ~48 deg
+  const betaOffset = e.beta - 48;
+  const clampedBeta = Math.max(-30, Math.min(30, betaOffset));
+  gyroTiltY = (-clampedBeta / 30) * 0.85;
+}
+
+function initGyroscope() {
+  if (typeof window !== 'undefined' && 'DeviceOrientationEvent' in window) {
+    if (typeof DeviceOrientationEvent.requestPermission !== 'function') {
+      window.addEventListener('deviceorientation', handleDeviceOrientation, { passive: true });
+    }
+  }
+}
+initGyroscope();
+
+// ===== 🪄 MAGIC CARPET & STARDUST WAND TRAIL =====
+let lastStardustTime = 0;
+let lastStardustX = 0, lastStardustY = 0;
+const STARDUST_CHARS = ['✦', '⋆', '✨', '•', '✧', '💖', '★'];
+
+function spawnStardust(x, y) {
+  const now = performance.now();
+  if (now - lastStardustTime < 32) return;
+  const dist = Math.hypot(x - lastStardustX, y - lastStardustY);
+  if (dist < 10) return;
+
+  lastStardustTime = now;
+  lastStardustX = x;
+  lastStardustY = y;
+
+  const count = Math.random() > 0.5 ? 2 : 1;
+  for (let i = 0; i < count; i++) {
+    const star = document.createElement('span');
+    star.className = 'magic-stardust-particle';
+    star.textContent = STARDUST_CHARS[Math.floor(Math.random() * STARDUST_CHARS.length)];
+    star.style.left = `${x}px`;
+    star.style.top = `${y}px`;
+
+    const sx = (Math.random() - 0.5) * 36;
+    const sy = (Math.random() - 0.5) * 36 - 12;
+    const srot = (Math.random() - 0.5) * 90;
+
+    star.style.setProperty('--sx', `${sx}px`);
+    star.style.setProperty('--sy', `${sy}px`);
+    star.style.setProperty('--srot', `${srot}deg`);
+
+    document.body.appendChild(star);
+    setTimeout(() => star.remove(), 900);
+  }
+}
+
 function onMouseMove(e) {
   mouseX = (e.clientX / window.innerWidth - 0.5) * 2;
   mouseY = (e.clientY / window.innerHeight - 0.5) * 2;
@@ -962,12 +1047,15 @@ function onMouseMove(e) {
     glow.style.left = `${e.clientX}px`;
     glow.style.top = `${e.clientY}px`;
   }
+  spawnStardust(e.clientX, e.clientY);
 }
 
 function onTouchMove(e) {
   if (e.touches.length > 0) {
     mouseX = (e.touches[0].clientX / window.innerWidth - 0.5) * 2;
     mouseY = (e.touches[0].clientY / window.innerHeight - 0.5) * 2;
+
+    spawnStardust(e.touches[0].clientX, e.touches[0].clientY);
   }
 }
 
@@ -986,15 +1074,23 @@ function animateThree() {
     particlesMesh.rotation.x = time * 0.01;
   }
 
-  // Rotate 3D Floating Love Hearts & Crystals
+  // Smooth Gyroscope & Mouse Parallax Interpolation
+  currentGyroX += (gyroTiltX - currentGyroX) * 0.08;
+  currentGyroY += (gyroTiltY - currentGyroY) * 0.08;
+
+  const activeParallaxX = hasGyro ? currentGyroX : (mouseX * 0.6);
+  const activeParallaxY = hasGyro ? currentGyroY : (-mouseY * 0.5);
+
+  // Rotate 3D Floating Love Hearts & Crystals (Reacts to Phone Tilt)
   if (ringGroup && ringGroup.visible) {
-    ringGroup.rotation.y = time * 0.14;
-    ringGroup.rotation.z = Math.sin(time * 0.25) * 0.08;
+    ringGroup.rotation.y = time * 0.14 + activeParallaxX * 0.18;
+    ringGroup.rotation.z = Math.sin(time * 0.25) * 0.08 + activeParallaxX * 0.06;
+    ringGroup.rotation.x = Math.sin(time * 0.3) * 0.06 + activeParallaxY * 0.12;
 
     ringGroup.children.forEach(obj => {
       if (obj.userData && obj.userData.isHeart) {
-        obj.rotation.y = time * (obj.userData.speed || 0.45) + obj.userData.phase;
-        obj.rotation.x = Math.sin(time * 0.65 + obj.userData.phase) * 0.18;
+        obj.rotation.y = time * (obj.userData.speed || 0.45) + obj.userData.phase + activeParallaxX * 0.3;
+        obj.rotation.x = Math.sin(time * 0.65 + obj.userData.phase) * 0.18 + activeParallaxY * 0.2;
         obj.position.y = obj.userData.baseY + Math.sin(time * 1.35 + obj.userData.phase) * 0.14;
       } else if (obj.userData && obj.userData.isCrystal) {
         obj.rotation.y = time * 0.75 + obj.userData.phase;
@@ -1008,13 +1104,14 @@ function animateThree() {
   if (balloonGroup) {
     balloonGroup.children.forEach(b => {
       b.position.y = b.userData.baseY + Math.sin(time * b.userData.speed + b.userData.phase) * 0.18;
-      b.rotation.z = Math.sin(time * 0.8 + b.userData.phase) * 0.1;
+      b.rotation.z = Math.sin(time * 0.8 + b.userData.phase) * 0.1 + activeParallaxX * 0.08;
     });
   }
 
   // Animate 3D Cake & Candle Flames Flicker
   if (cakeGroup && cakeGroup.visible) {
-    cakeGroup.rotation.y = time * 0.18;
+    cakeGroup.rotation.y = time * 0.18 + activeParallaxX * 0.15;
+    cakeGroup.rotation.x = activeParallaxY * 0.1;
 
     if (candlesLit) {
       cakeFlames.forEach((flame, idx) => {
@@ -1029,7 +1126,7 @@ function animateThree() {
 
   // Animate 3D Orbiting Photo Cards around Cake
   if (orbitPhotosGroup && orbitPhotosGroup.visible) {
-    orbitPhotosGroup.rotation.y = time * 0.22;
+    orbitPhotosGroup.rotation.y = time * 0.22 + activeParallaxX * 0.18;
 
     orbitPhotoCards.forEach((card) => {
       // Gentle floating bob
@@ -1039,12 +1136,9 @@ function animateThree() {
     });
   }
 
-  // Smooth Camera Director Lerping
-  const targetCamX = mouseX * 0.6;
-  const targetCamY = -mouseY * 0.5;
-
-  camera.position.x += (targetCameraX + targetCamX - camera.position.x) * 0.05;
-  camera.position.y += (targetCameraY + targetCamY - camera.position.y) * 0.05;
+  // Smooth Camera Director Lerping with Gyro / Mouse Parallax
+  camera.position.x += (targetCameraX + activeParallaxX - camera.position.x) * 0.055;
+  camera.position.y += (targetCameraY + activeParallaxY - camera.position.y) * 0.055;
   camera.position.z += (targetCameraZ - camera.position.z) * 0.05;
 
   camera.lookAt(0, targetLookAtY, 0);
@@ -1348,6 +1442,13 @@ function play3DCinematicIntro() {
 const introUnlockBtn = document.getElementById('introUnlockBtn');
 if (introUnlockBtn) {
   introUnlockBtn.addEventListener('click', () => {
+    if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
+      DeviceOrientationEvent.requestPermission().then(state => {
+        if (state === 'granted') {
+          window.addEventListener('deviceorientation', handleDeviceOrientation, { passive: true });
+        }
+      }).catch(() => {});
+    }
     play3DCinematicIntro();
   });
 }
@@ -1403,6 +1504,86 @@ function showLiveToast(text) {
   }, 3500);
 }
 
+// ===== ⏳ MAGICAL LIVE TIME TRAVELER (AGE & MAGIC CLOCK) =====
+let magicClockInterval = null;
+
+function updateMagicClock() {
+  const clockCard = document.getElementById('magicClockCard');
+  if (!clockCard) return;
+
+  const clockYears = document.getElementById('clockYears');
+  const clockDays = document.getElementById('clockDays');
+  const clockHours = document.getElementById('clockHours');
+  const clockSeconds = document.getElementById('clockSeconds');
+  const clockNextBdayText = document.getElementById('clockNextBdayText');
+
+  // Check if birthdate is provided
+  if (!S.birthdate || S.showBirthdate === false) {
+    clockCard.style.display = 'none';
+    return;
+  }
+
+  const birth = new Date(S.birthdate + 'T00:00:00');
+  const now = new Date();
+
+  if (isNaN(birth.getTime()) || birth > now) {
+    clockCard.style.display = 'none';
+    return;
+  }
+
+  clockCard.style.display = 'flex';
+
+  const diffMs = now.getTime() - birth.getTime();
+  const totalSeconds = Math.floor(diffMs / 1000);
+  const totalHours = Math.floor(diffMs / (1000 * 60 * 60));
+  const totalDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+  // Exact completed years
+  let years = now.getFullYear() - birth.getFullYear();
+  const m = now.getMonth() - birth.getMonth();
+  if (m < 0 || (m === 0 && now.getDate() < birth.getDate())) {
+    years--;
+  }
+
+  // Next Birthday Countdown
+  let nextBday = new Date(now.getFullYear(), birth.getMonth(), birth.getDate());
+  if (nextBday < now) {
+    nextBday = new Date(now.getFullYear() + 1, birth.getMonth(), birth.getDate());
+  }
+
+  const diffToNext = nextBday.getTime() - now.getTime();
+  const daysToNext = Math.floor(diffToNext / (1000 * 60 * 60 * 24));
+  const hoursToNext = Math.floor((diffToNext / (1000 * 60 * 60)) % 24);
+  const minsToNext = Math.floor((diffToNext / (1000 * 60)) % 60);
+  const secsToNext = Math.floor((diffToNext / 1000) % 60);
+
+  if (clockYears) clockYears.textContent = Math.max(0, years);
+  if (clockDays) clockDays.textContent = totalDays.toLocaleString();
+  if (clockHours) clockHours.textContent = totalHours.toLocaleString();
+  if (clockSeconds) clockSeconds.textContent = totalSeconds.toLocaleString();
+
+  if (clockNextBdayText) {
+    if (daysToNext === 0 && now.getMonth() === birth.getMonth() && now.getDate() === birth.getDate()) {
+      clockNextBdayText.textContent = '🎉 TODAY IS THE BIG DAY! HAPPY BIRTHDAY! 🥳💖';
+    } else {
+      clockNextBdayText.textContent = `✨ Next Birthday in ${daysToNext}d ${hoursToNext}h ${minsToNext}m ${secsToNext}s 🎂`;
+    }
+  }
+}
+
+function startMagicClock() {
+  updateMagicClock();
+  if (!magicClockInterval) {
+    magicClockInterval = setInterval(updateMagicClock, 1000);
+  }
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', startMagicClock);
+} else {
+  startMagicClock();
+}
+
 // ===== DYNAMIC LIVE UPDATE DISPATCHER =====
 let isFirstLiveRun = true;
 function applyLiveUpdate(newSettings, isInitial = false) {
@@ -1421,13 +1602,13 @@ function applyLiveUpdate(newSettings, isInitial = false) {
   const introForNameEl = document.getElementById('introForName');
   if (introForNameEl) introForNameEl.textContent = `For ${S.name || 'Someone Very Special'} 👑`;
 
-  // 2. Birthdate
+  // 2. Birthdate & Magic Time Clock
   const bdWrapper = document.getElementById('birthdateWrapper');
   const bdDisplay = document.getElementById('birthdateDisplay');
   if (bdWrapper && bdDisplay) {
     if (S.birthdate && S.showBirthdate !== false) {
       try {
-        const bd = new Date(S.birthdate);
+        const bd = new Date(S.birthdate + 'T00:00:00');
         const options = { year: 'numeric', month: 'long', day: 'numeric' };
         bdDisplay.textContent = bd.toLocaleDateString('en-US', options);
         bdWrapper.style.display = 'inline-flex';
@@ -1438,6 +1619,7 @@ function applyLiveUpdate(newSettings, isInitial = false) {
       bdWrapper.style.display = 'none';
     }
   }
+  if (typeof updateMagicClock === 'function') updateMagicClock();
 
   // 3. Special Subtitle Text
   const specialTextEl = document.getElementById('specialText');
@@ -1489,6 +1671,7 @@ function applyLiveUpdate(newSettings, isInitial = false) {
   if (typeof window.setupOrbitCards === 'function') window.setupOrbitCards();
   if (typeof window.setupMemoriesReel === 'function') window.setupMemoriesReel();
   if (typeof updateGiftSurprisePhoto === 'function') updateGiftSurprisePhoto();
+  if (typeof window.updateVoiceUI === 'function') window.updateVoiceUI();
 
   // 9. Music URL
   if (typeof bgMusic !== 'undefined' && bgMusic && S.musicUrl && bgMusic.src !== S.musicUrl) {
@@ -1504,6 +1687,114 @@ function applyLiveUpdate(newSettings, isInitial = false) {
     showLiveToast(`⚡ Live Updated: "${S.name}"`);
   }
   isFirstLiveRun = false;
+}
+
+// ===== 🎙️ LUXURY VOICE NOTE CAPSULE PLAYER =====
+let isVoicePlaying = false;
+
+function initVoicePlayer() {
+  const voiceNoteCard = document.getElementById('voiceNoteCard');
+  const voiceAudioPlayer = document.getElementById('voiceAudioPlayer');
+  const btnVoicePlay = document.getElementById('btnVoicePlay');
+  const voicePlayIcon = document.getElementById('voicePlayIcon');
+  const voiceTitleDisplay = document.getElementById('voiceTitleDisplay');
+  const voiceDurationDisplay = document.getElementById('voiceDurationDisplay');
+  const voiceProgressFill = document.getElementById('voiceProgressFill');
+  const voiceProgressTrack = document.getElementById('voiceProgressTrack');
+
+  if (!voiceNoteCard || !voiceAudioPlayer) return;
+
+  function updateVoiceUI() {
+    if (S.showVoiceNote !== false && S.voiceUrl && S.voiceUrl.trim()) {
+      voiceNoteCard.style.display = 'block';
+      if (voiceTitleDisplay) {
+        voiceTitleDisplay.textContent = S.voiceTitle || 'A Special Message from the Heart 💖';
+      }
+      if (voiceAudioPlayer.src !== S.voiceUrl && !voiceAudioPlayer.src.endsWith(S.voiceUrl)) {
+        voiceAudioPlayer.src = S.voiceUrl;
+        voiceAudioPlayer.load();
+      }
+    } else {
+      voiceNoteCard.style.display = 'none';
+      if (!voiceAudioPlayer.paused) {
+        voiceAudioPlayer.pause();
+      }
+    }
+  }
+  window.updateVoiceUI = updateVoiceUI;
+
+  function fmtTime(secs) {
+    if (isNaN(secs) || secs < 0) return '0:00';
+    const m = Math.floor(secs / 60);
+    const s = Math.floor(secs % 60);
+    return `${m}:${s < 10 ? '0' : ''}${s}`;
+  }
+
+  btnVoicePlay?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    if (!voiceAudioPlayer.src) return;
+
+    if (voiceAudioPlayer.paused) {
+      voiceAudioPlayer.play().then(() => {
+        isVoicePlaying = true;
+        voiceNoteCard.classList.add('playing');
+        if (voicePlayIcon) voicePlayIcon.textContent = '⏸';
+        if (typeof bgMusic !== 'undefined' && bgMusic && typeof gsap !== 'undefined') {
+          gsap.to(bgMusic, { volume: 0.12, duration: 0.5 });
+        }
+      }).catch(err => console.log('Audio play error:', err));
+    } else {
+      voiceAudioPlayer.pause();
+      isVoicePlaying = false;
+      voiceNoteCard.classList.remove('playing');
+      if (voicePlayIcon) voicePlayIcon.textContent = '▶';
+      if (typeof bgMusic !== 'undefined' && bgMusic && typeof gsap !== 'undefined') {
+        gsap.to(bgMusic, { volume: 0.65, duration: 0.5 });
+      }
+    }
+  });
+
+  voiceAudioPlayer.addEventListener('timeupdate', () => {
+    const cur = voiceAudioPlayer.currentTime;
+    const dur = voiceAudioPlayer.duration || 0;
+    if (voiceDurationDisplay) {
+      voiceDurationDisplay.textContent = dur > 0 ? `${fmtTime(cur)} / ${fmtTime(dur)}` : fmtTime(cur);
+    }
+    if (voiceProgressFill && dur > 0) {
+      voiceProgressFill.style.width = `${(cur / dur) * 100}%`;
+    }
+  });
+
+  voiceAudioPlayer.addEventListener('loadedmetadata', () => {
+    if (voiceDurationDisplay) {
+      voiceDurationDisplay.textContent = `0:00 / ${fmtTime(voiceAudioPlayer.duration)}`;
+    }
+  });
+
+  voiceAudioPlayer.addEventListener('ended', () => {
+    isVoicePlaying = false;
+    voiceNoteCard.classList.remove('playing');
+    if (voicePlayIcon) voicePlayIcon.textContent = '▶';
+    if (voiceProgressFill) voiceProgressFill.style.width = '0%';
+    if (typeof bgMusic !== 'undefined' && bgMusic && typeof gsap !== 'undefined') {
+      gsap.to(bgMusic, { volume: 0.65, duration: 0.6 });
+    }
+  });
+
+  voiceProgressTrack?.addEventListener('click', (e) => {
+    if (!voiceAudioPlayer.duration) return;
+    const rect = voiceProgressTrack.getBoundingClientRect();
+    const pos = (e.clientX - rect.left) / rect.width;
+    voiceAudioPlayer.currentTime = pos * voiceAudioPlayer.duration;
+  });
+
+  updateVoiceUI();
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initVoicePlayer);
+} else {
+  initVoicePlayer();
 }
 
 // Initial populate
@@ -1800,3 +2091,445 @@ if (document.readyState === 'complete' || document.readyState === 'interactive')
 } else {
   document.addEventListener('DOMContentLoaded', initThreeScene);
 }
+
+// ===== 📸 ROYAL KEEPSAKE SOUVENIR CARD GENERATOR (1080x1920 HD STORY CARD) =====
+async function generateRoyalSouvenirCard() {
+  const btn = document.getElementById('btnDownloadSouvenir');
+  const origBtnHTML = btn ? btn.innerHTML : '';
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = `
+      <span class="souvenir-icon-wrap" style="animation: spin 1s linear infinite;">⏳</span>
+      <span class="souvenir-text-group">
+        <span class="souvenir-title">Generating 4K Royal Card...</span>
+        <span class="souvenir-sub">Crafting your golden keepsake ✨</span>
+      </span>
+    `;
+  }
+
+  try {
+    const W = 1080;
+    const H = 1920;
+    const canvas = document.createElement('canvas');
+    canvas.width = W;
+    canvas.height = H;
+    const ctx = canvas.getContext('2d');
+
+    // 1. Background Gradient (Deep Majestic Cosmic Velvet)
+    const bgGrad = ctx.createLinearGradient(0, 0, W, H);
+    bgGrad.addColorStop(0, '#0a0314');
+    bgGrad.addColorStop(0.35, '#19062b');
+    bgGrad.addColorStop(0.7, '#2a0845');
+    bgGrad.addColorStop(1, '#0e021a');
+    ctx.fillStyle = bgGrad;
+    ctx.fillRect(0, 0, W, H);
+
+    // 2. Cosmic Nebula Radial Glow
+    const radGlow1 = ctx.createRadialGradient(W / 2, 450, 50, W / 2, 450, 500);
+    radGlow1.addColorStop(0, 'rgba(236, 72, 153, 0.35)');
+    radGlow1.addColorStop(0.5, 'rgba(168, 85, 247, 0.18)');
+    radGlow1.addColorStop(1, 'transparent');
+    ctx.fillStyle = radGlow1;
+    ctx.fillRect(0, 0, W, H);
+
+    const radGlow2 = ctx.createRadialGradient(W / 2, 1400, 50, W / 2, 1400, 600);
+    radGlow2.addColorStop(0, 'rgba(245, 158, 11, 0.25)');
+    radGlow2.addColorStop(1, 'transparent');
+    ctx.fillStyle = radGlow2;
+    ctx.fillRect(0, 0, W, H);
+
+    // 3. Stardust Particles & Sparkles
+    for (let i = 0; i < 220; i++) {
+      const px = Math.random() * W;
+      const py = Math.random() * H;
+      const pr = Math.random() * 2.2 + 0.5;
+      const alpha = Math.random() * 0.7 + 0.2;
+      ctx.fillStyle = `rgba(255, 255, 255, ${alpha})`;
+      ctx.beginPath();
+      ctx.arc(px, py, pr, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Mini golden starlight crosses
+      if (i % 15 === 0) {
+        ctx.strokeStyle = 'rgba(254, 240, 138, 0.6)';
+        ctx.lineWidth = 1.2;
+        ctx.beginPath();
+        ctx.moveTo(px - 6, py);
+        ctx.lineTo(px + 6, py);
+        ctx.moveTo(px, py - 6);
+        ctx.lineTo(px, py + 6);
+        ctx.stroke();
+      }
+    }
+
+    // 4. Double Royal Gold Border
+    const pad = 50;
+    ctx.save();
+    ctx.strokeStyle = '#f59e0b';
+    ctx.lineWidth = 4;
+    ctx.shadowColor = '#fbbf24';
+    ctx.shadowBlur = 20;
+    roundRect(ctx, pad, pad, W - pad * 2, H - pad * 2, 40);
+    ctx.stroke();
+
+    // Inner delicate frame
+    ctx.strokeStyle = 'rgba(255, 215, 0, 0.4)';
+    ctx.lineWidth = 1.5;
+    ctx.shadowBlur = 8;
+    roundRect(ctx, pad + 18, pad + 18, W - (pad + 18) * 2, H - (pad + 18) * 2, 30);
+    ctx.stroke();
+    ctx.restore();
+
+    // Corner Ornaments
+    drawCornerStar(ctx, pad + 35, pad + 35);
+    drawCornerStar(ctx, W - pad - 35, pad + 35);
+    drawCornerStar(ctx, pad + 35, H - pad - 35);
+    drawCornerStar(ctx, W - pad - 35, H - pad - 35);
+
+    // 5. Crown Header
+    ctx.font = '54px "Cinzel", Georgia, serif';
+    ctx.textAlign = 'center';
+    ctx.fillStyle = '#ffd700';
+    ctx.shadowColor = 'rgba(255, 215, 0, 0.6)';
+    ctx.shadowBlur = 25;
+    ctx.fillText('👑', W / 2, 160);
+
+    ctx.font = 'bold 24px "Outfit", "Segoe UI", sans-serif';
+    ctx.letterSpacing = '8px';
+    ctx.fillStyle = '#fef08a';
+    ctx.shadowBlur = 15;
+    ctx.fillText('✦ A ROYAL BIRTHDAY CELEBRATION ✦', W / 2, 215);
+
+    // 6. Recipient Photo in Gold Medallion
+    const photoUrl = (typeof getSurpriseGiftPhoto === 'function') ? getSurpriseGiftPhoto() : (S.giftPhoto || S.photo || (S.photos && S.photos[0]) || '');
+    let imgLoaded = false;
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+
+    if (photoUrl) {
+      await new Promise((resolve) => {
+        img.onload = () => { imgLoaded = true; resolve(); };
+        img.onerror = () => { resolve(); };
+        img.src = photoUrl;
+      });
+    }
+
+    const photoCenterX = W / 2;
+    const photoCenterY = 560;
+    const photoRadius = 220;
+
+    // Glowing photo frame halo
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(photoCenterX, photoCenterY, photoRadius + 14, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(245, 158, 11, 0.3)';
+    ctx.shadowColor = '#f59e0b';
+    ctx.shadowBlur = 40;
+    ctx.fill();
+
+    ctx.beginPath();
+    ctx.arc(photoCenterX, photoCenterY, photoRadius + 6, 0, Math.PI * 2);
+    ctx.strokeStyle = '#ffd700';
+    ctx.lineWidth = 6;
+    ctx.stroke();
+
+    // Clip circular photo
+    ctx.beginPath();
+    ctx.arc(photoCenterX, photoCenterY, photoRadius, 0, Math.PI * 2);
+    ctx.clip();
+
+    if (imgLoaded) {
+      const aspect = img.width / img.height;
+      let drawW, drawH, drawX, drawY;
+      if (aspect > 1) {
+        drawH = photoRadius * 2;
+        drawW = drawH * aspect;
+        drawX = photoCenterX - drawW / 2;
+        drawY = photoCenterY - photoRadius;
+      } else {
+        drawW = photoRadius * 2;
+        drawH = drawW / aspect;
+        drawX = photoCenterX - photoRadius;
+        drawY = photoCenterY - drawH / 2;
+      }
+      ctx.drawImage(img, drawX, drawY, drawW, drawH);
+    } else {
+      ctx.fillStyle = '#3b0764';
+      ctx.fillRect(photoCenterX - photoRadius, photoCenterY - photoRadius, photoRadius * 2, photoRadius * 2);
+      ctx.font = 'bold 90px "Cinzel", Georgia, serif';
+      ctx.fillStyle = '#fef08a';
+      ctx.fillText((S.name ? S.name.charAt(0).toUpperCase() : '👑'), photoCenterX, photoCenterY + 30);
+    }
+    ctx.restore();
+
+    // 7. "HAPPY BIRTHDAY" Royal Title
+    ctx.save();
+    ctx.font = 'bold 84px "Cinzel Decorative", "Cinzel", Georgia, serif';
+    ctx.textAlign = 'center';
+    const titleGrad = ctx.createLinearGradient(W / 2 - 300, 0, W / 2 + 300, 0);
+    titleGrad.addColorStop(0, '#ffffff');
+    titleGrad.addColorStop(0.3, '#fef08a');
+    titleGrad.addColorStop(0.7, '#f59e0b');
+    titleGrad.addColorStop(1, '#ffd700');
+    ctx.fillStyle = titleGrad;
+    ctx.shadowColor = 'rgba(245, 158, 11, 0.8)';
+    ctx.shadowBlur = 30;
+    ctx.fillText('HAPPY BIRTHDAY', W / 2, 885);
+    ctx.restore();
+
+    // 8. Recipient Name Script Calligraphy
+    ctx.save();
+    ctx.font = 'italic 76px "Playfair Display", "Great Vibes", Georgia, serif';
+    ctx.textAlign = 'center';
+    ctx.fillStyle = '#ffffff';
+    ctx.shadowColor = '#ec4899';
+    ctx.shadowBlur = 25;
+    ctx.fillText(S.name || 'Your Name', W / 2, 975);
+    ctx.restore();
+
+    // 9. Special Subtitle / Date Pill
+    const birthdateFormatted = S.birthdate ? formatDate(S.birthdate) : 'A Day of Boundless Joy & Magic';
+    ctx.save();
+    const pillW = Math.min(740, ctx.measureText(birthdateFormatted).width + 120);
+    const pillH = 50;
+    const pillX = (W - pillW) / 2;
+    const pillY = 1015;
+
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.08)';
+    ctx.strokeStyle = 'rgba(255, 215, 0, 0.4)';
+    ctx.lineWidth = 1.5;
+    roundRect(ctx, pillX, pillY, pillW, pillH, 25);
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.font = '600 22px "Outfit", "Segoe UI", sans-serif';
+    ctx.fillStyle = '#fef08a';
+    ctx.shadowColor = '#f59e0b';
+    ctx.shadowBlur = 10;
+    ctx.textAlign = 'center';
+    ctx.fillText(`🎂 ${birthdateFormatted} ✨`, W / 2, pillY + 33);
+    ctx.restore();
+
+    // 10. Heartfelt Birthday Note Box
+    ctx.save();
+    const boxPad = 100;
+    const boxW = W - boxPad * 2;
+    const boxH = 360;
+    const boxY = 1110;
+
+    // Frosted card background
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.06)';
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.18)';
+    ctx.lineWidth = 2;
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.6)';
+    ctx.shadowBlur = 30;
+    roundRect(ctx, boxPad, boxY, boxW, boxH, 24);
+    ctx.fill();
+    ctx.stroke();
+
+    // Quotation Marks
+    ctx.font = 'bold 65px "Cinzel", Georgia, serif';
+    ctx.fillStyle = 'rgba(254, 240, 138, 0.35)';
+    ctx.textAlign = 'left';
+    ctx.fillText('“', boxPad + 25, boxY + 60);
+
+    // Note Text Wrapped
+    const noteText = S.birthdayNote || S.specialText || 'May this special birthday bring you unlimited happiness, radiant health, and every blessing your heart desires!';
+    ctx.font = 'italic 28px "Playfair Display", Georgia, serif';
+    ctx.fillStyle = '#f8fafc';
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.8)';
+    ctx.shadowBlur = 10;
+    ctx.textAlign = 'center';
+
+    wrapText(ctx, noteText, W / 2, boxY + 95, boxW - 80, 44);
+    ctx.restore();
+
+    // 11. Wisher Signature (if enabled)
+    if (S.showWisher && S.wisherName) {
+      ctx.save();
+      ctx.font = 'italic 30px "Playfair Display", Georgia, serif';
+      ctx.fillStyle = '#fef08a';
+      ctx.textAlign = 'center';
+      ctx.shadowColor = '#f59e0b';
+      ctx.shadowBlur = 15;
+      ctx.fillText(`With endless love & blessings, ${S.wisherName} 💖`, W / 2, 1545);
+      ctx.restore();
+    }
+
+    // 12. Bottom Watermark & Story Sharing Badge
+    ctx.save();
+    ctx.font = 'bold 20px "Outfit", "Segoe UI", sans-serif';
+    ctx.letterSpacing = '5px';
+    ctx.fillStyle = 'rgba(254, 240, 138, 0.75)';
+    ctx.textAlign = 'center';
+    ctx.shadowColor = '#f59e0b';
+    ctx.shadowBlur = 12;
+    ctx.fillText('✨ FOREVER CHERISHED & CELEBRATED ✨', W / 2, 1720);
+
+    ctx.font = '16px "Outfit", "Segoe UI", sans-serif';
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.45)';
+    ctx.fillText('Made with love for your special day', W / 2, 1755);
+    ctx.restore();
+
+    // 13. Convert Canvas to High-Res Blob & Download
+    canvas.toBlob((blob) => {
+      if (!blob) return;
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      const safeName = (S.name || 'Birthday').replace(/[^\w\s-]/gi, '').trim().replace(/\s+/g, '-');
+      a.download = `Royal-Birthday-Keepsake-${safeName}.png`;
+      a.href = url;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+
+      // Confetti & Toast
+      launchConfetti(250);
+      showLiveToast('📸 Royal Keepsake Card downloaded! Share it on your story! ✨');
+    }, 'image/png', 1.0);
+
+  } catch (err) {
+    console.error('Error generating souvenir card:', err);
+    showLiveToast('⚠️ Could not generate card. Please try again.');
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = origBtnHTML;
+    }
+  }
+}
+
+// Helper: Round Rectangle for Canvas
+function roundRect(ctx, x, y, width, height, radius) {
+  ctx.beginPath();
+  ctx.moveTo(x + radius, y);
+  ctx.lineTo(x + width - radius, y);
+  ctx.quadraticCurveTo(x + width, y, x + width, y + radius);
+  ctx.lineTo(x + width, y + height - radius);
+  ctx.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
+  ctx.lineTo(x + radius, y + height);
+  ctx.quadraticCurveTo(x, y + height, x, y + height - radius);
+  ctx.lineTo(x, y + radius);
+  ctx.quadraticCurveTo(x, y, x + radius, y);
+  ctx.closePath();
+}
+
+// Helper: Draw Corner Star Filigree
+function drawCornerStar(ctx, x, y) {
+  ctx.save();
+  ctx.fillStyle = '#ffd700';
+  ctx.shadowColor = '#f59e0b';
+  ctx.shadowBlur = 15;
+  ctx.font = '28px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('✦', x, y);
+  ctx.restore();
+}
+
+// Helper: Word-Wrap Text
+function wrapText(ctx, text, x, y, maxWidth, lineHeight) {
+  const words = (text || '').split(' ');
+  let line = '';
+  let currentY = y;
+  const maxLines = 6;
+  let lineCount = 0;
+
+  for (let n = 0; n < words.length; n++) {
+    const testLine = line + words[n] + ' ';
+    const metrics = ctx.measureText(testLine);
+    const testWidth = metrics.width;
+    if (testWidth > maxWidth && n > 0) {
+      ctx.fillText(line.trim(), x, currentY);
+      line = words[n] + ' ';
+      currentY += lineHeight;
+      lineCount++;
+      if (lineCount >= maxLines - 1 && n < words.length - 1) {
+        line += '...';
+        break;
+      }
+    } else {
+      line = testLine;
+    }
+  }
+  ctx.fillText(line.trim(), x, currentY);
+}
+
+// Attach event listener for Souvenir download button
+const btnDownloadSouvenir = document.getElementById('btnDownloadSouvenir');
+if (btnDownloadSouvenir) {
+  btnDownloadSouvenir.addEventListener('click', generateRoyalSouvenirCard);
+}
+
+// ===== 🎆 INTERACTIVE SPARKLE & HEART FIREWORKS (SCREEN TAP BURST) =====
+const BURST_SYMBOLS = ['💖', '✨', '🌸', '💕', '🌟', '💎', '💗', '⋆', '✦'];
+
+function triggerTapFireworks(x, y) {
+  if (typeof sfx !== 'undefined' && sfx.playSparklePop) {
+    sfx.playSparklePop();
+  }
+
+  // 1. Shockwave Ripple Aura
+  const ripple = document.createElement('div');
+  ripple.className = 'tap-firework-ripple';
+  ripple.style.left = `${x}px`;
+  ripple.style.top = `${y}px`;
+  document.body.appendChild(ripple);
+  setTimeout(() => ripple.remove(), 750);
+
+  // 2. Spawn 12 - 16 Floating Emojis & Sparkle Stars
+  const particleCount = 14;
+  for (let i = 0; i < particleCount; i++) {
+    const p = document.createElement('span');
+    p.className = 'tap-firework-particle';
+    const symbol = BURST_SYMBOLS[Math.floor(Math.random() * BURST_SYMBOLS.length)];
+    p.textContent = symbol;
+    p.style.left = `${x}px`;
+    p.style.top = `${y}px`;
+
+    // Radial trajectory
+    const angle = (Math.PI * 2 / particleCount) * i + (Math.random() - 0.5) * 0.4;
+    const velocity = 50 + Math.random() * 95;
+    const destX = Math.cos(angle) * velocity;
+    const destY = Math.sin(angle) * velocity - 25;
+    const rot = (Math.random() - 0.5) * 120;
+    const scale = 0.6 + Math.random() * 0.8;
+
+    p.style.setProperty('--dx', `${destX}px`);
+    p.style.setProperty('--dy', `${destY}px`);
+    p.style.setProperty('--rot', `${rot}deg`);
+    p.style.setProperty('--scale', `${scale}`);
+
+    document.body.appendChild(p);
+    setTimeout(() => p.remove(), 1100);
+  }
+
+  // 3. Mini Canvas Confetti Shower
+  if (typeof confetti === 'function') {
+    confetti({
+      particleCount: 16,
+      angle: 90,
+      spread: 360,
+      startVelocity: 18,
+      origin: { x: x / window.innerWidth, y: y / window.innerHeight },
+      colors: currentTheme ? currentTheme.confetti : ['#ec4899', '#f43f5e', '#ffd700', '#38bdf8', '#ffffff'],
+      ticks: 80,
+      gravity: 0.8,
+      scalar: 0.75,
+      shapes: ['circle', 'square'],
+      disableForReducedMotion: true
+    });
+  }
+}
+
+// Global click/touch listener for tap burst fireworks
+window.addEventListener('pointerdown', (e) => {
+  // Ignore clicks on buttons, inputs, links, or specific UI controls
+  if (e.target.closest('button, input, textarea, a, select, .theme-opt-btn, .nav-dot, .lightbox-card, .reel-card')) {
+    return;
+  }
+  triggerTapFireworks(e.clientX, e.clientY);
+}, { passive: true });
+
+

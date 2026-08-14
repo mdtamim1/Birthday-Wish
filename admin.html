@@ -254,6 +254,72 @@
       </div>
     </section>
 
+    <!-- === 🎙️ SPECIAL VOICE MESSAGE === -->
+    <section class="admin-section" id="section-voice">
+      <div class="section-header">
+        <span class="section-icon">🎙️</span>
+        <div>
+          <h2 class="section-title">Special Voice Message (ভয়েস নোট)</h2>
+          <p class="section-desc">Upload or record a personalized voice wish for the birthday person</p>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <div class="toggle-row">
+          <div>
+            <label class="form-label">Show Voice Note Player</label>
+            <p class="form-hint">Enables a luxury audio player capsule on the frontend</p>
+          </div>
+          <label class="toggle-switch">
+            <input type="checkbox" id="showVoiceNoteToggle" checked />
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Voice Note Title</label>
+        <input type="text" id="voiceTitleInput" class="form-input" placeholder="e.g. A Special Message from Tamim 💖" />
+      </div>
+
+      <!-- Live Voice Recorder & File Uploader -->
+      <div class="form-group">
+        <label class="form-label">Voice Audio File</label>
+        <div class="voice-admin-box" style="background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1); padding: 16px; border-radius: 12px;">
+          
+          <!-- Direct File Upload Button & Record Button -->
+          <div class="voice-upload-row" style="display:flex; gap:10px; flex-wrap:wrap;">
+            <input type="file" id="voiceFileInput" accept="audio/*" style="display:none;" />
+            <button type="button" class="btn btn-secondary" id="btnChooseVoiceFile">
+              📁 Choose Audio File (.mp3, .m4a, .wav)
+            </button>
+            <button type="button" class="btn btn-primary" id="btnRecordVoice">
+              <span id="recordDot">🔴</span> <span id="recordBtnText">Record Live Voice</span>
+            </button>
+          </div>
+
+          <!-- Live Recording Status -->
+          <div class="voice-recording-status" id="voiceRecordStatus" style="display:none; align-items:center; gap:12px; margin-top:12px; padding:10px; background:rgba(239,68,68,0.15); border-radius:8px;">
+            <span class="recording-pulse" style="width:12px; height:12px; border-radius:50%; background:#ef4444; display:inline-block; animation: pulse 1s infinite;"></span>
+            <span class="recording-time" id="voiceRecordTime" style="font-weight:700; font-family:monospace; color:#ef4444; font-size:1.1rem;">0:00</span>
+            <button type="button" class="btn btn-danger btn-sm" id="btnStopRecord">⏹ Stop &amp; Save</button>
+          </div>
+
+          <!-- Audio Preview Player -->
+          <div class="voice-preview-row" id="voicePreviewRow" style="display:none; margin-top:12px;">
+            <audio id="voiceAudioPreview" controls style="width:100%; border-radius: 8px;"></audio>
+            <button type="button" class="btn btn-sm btn-outline-danger" id="btnRemoveVoice" style="margin-top: 8px;">✕ Remove Voice Note</button>
+          </div>
+
+          <!-- Or Direct URL -->
+          <div style="margin-top: 14px;">
+            <label class="form-label" style="font-size:0.8rem; color:var(--text-secondary);">Or Paste Direct Audio Link</label>
+            <input type="url" id="voiceUrlInput" class="form-input" placeholder="https://... (direct MP3 link)" />
+          </div>
+        </div>
+      </div>
+    </section>
+
     <!-- === THEME === -->
     <section class="admin-section" id="section-theme">
       <div class="section-header">

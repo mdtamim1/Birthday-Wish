@@ -5,7 +5,7 @@
 // ===== SETTINGS =====
 const DEFAULT_SETTINGS = {
   name: 'Your Name',
-  birthdate: '',
+  birthdate: '2002-08-15',
   specialText: 'May all your wildest dreams come true today and forever 🌸',
   birthdayNote: "On this magnificent day, I want you to know how truly special you are. Every smile of yours brings sunshine, and having you in this world is a blessing. Here's to a year overflowing with boundless joy, glorious memories, and endless love!",
   photo: '',
@@ -28,6 +28,9 @@ const DEFAULT_SETTINGS = {
   giftPhoto: '',
   showBirthdate: true,
   showGift: true,
+  voiceUrl: '',
+  showVoiceNote: true,
+  voiceTitle: 'A Special Voice Message from the Heart 💖',
   adminPassword: 'birthday123',
 };
 
@@ -107,6 +110,24 @@ function populateForm() {
   const floatToggle = document.getElementById('showFloatingMemoriesToggle');
   if (floatToggle) floatToggle.checked = S.showFloatingMemories !== false;
   document.getElementById('showGiftToggle').checked = S.showGift !== false;
+
+  // Voice Note
+  const showVoice = document.getElementById('showVoiceNoteToggle');
+  if (showVoice) showVoice.checked = S.showVoiceNote !== false;
+  const voiceTitle = document.getElementById('voiceTitleInput');
+  if (voiceTitle) voiceTitle.value = S.voiceTitle || '';
+  const voiceUrl = document.getElementById('voiceUrlInput');
+  if (voiceUrl) voiceUrl.value = S.voiceUrl || '';
+
+  const previewRow = document.getElementById('voicePreviewRow');
+  const audioPrev = document.getElementById('voiceAudioPreview');
+  if (S.voiceUrl && previewRow && audioPrev) {
+    audioPrev.src = S.voiceUrl;
+    previewRow.style.display = 'block';
+  } else if (previewRow) {
+    previewRow.style.display = 'none';
+  }
+
   updateThemePreview();
 
   // Photos
@@ -128,6 +149,10 @@ function populateForm() {
 // ===== COLLECT FORM DATA =====
 function collectFormData() {
   const floatToggle = document.getElementById('showFloatingMemoriesToggle');
+  const showVoiceToggle = document.getElementById('showVoiceNoteToggle');
+  const voiceTitleInput = document.getElementById('voiceTitleInput');
+  const voiceUrlInput = document.getElementById('voiceUrlInput');
+
   return {
     ...S,
     name: document.getElementById('nameInput').value.trim() || 'Your Name',
@@ -145,6 +170,9 @@ function collectFormData() {
     showBirthdate: document.getElementById('showBirthdateToggle').checked,
     showFloatingMemories: floatToggle ? floatToggle.checked : true,
     showGift: document.getElementById('showGiftToggle').checked,
+    showVoiceNote: showVoiceToggle ? showVoiceToggle.checked : true,
+    voiceTitle: voiceTitleInput ? voiceTitleInput.value.trim() : '',
+    voiceUrl: voiceUrlInput ? voiceUrlInput.value.trim() : '',
   };
 }
 
@@ -587,6 +615,118 @@ function showToast(message, type = 'success') {
   // Populate on load
   if (!S.photos) S.photos = [];
   refreshGrid();
+})();
+
+// ===== 🎙️ VOICE NOTE FILE UPLOADER & RECORDER =====
+(function initVoiceAdmin() {
+  const btnChooseVoice = document.getElementById('btnChooseVoiceFile');
+  const voiceFileInput = document.getElementById('voiceFileInput');
+  const voiceUrlInput = document.getElementById('voiceUrlInput');
+  const voicePreviewRow = document.getElementById('voicePreviewRow');
+  const voiceAudioPreview = document.getElementById('voiceAudioPreview');
+  const btnRemoveVoice = document.getElementById('btnRemoveVoice');
+
+  btnChooseVoice?.addEventListener('click', () => voiceFileInput?.click());
+
+  voiceFileInput?.addEventListener('change', async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    showToast('⏳ Uploading voice note...', 'info');
+    try {
+      const fd = new FormData();
+      fd.append('file', file);
+      const res = await fetch('/api/upload', { method: 'POST', body: fd });
+      const json = await res.json();
+      if (json.success && json.url) {
+        S.voiceUrl = json.url;
+        if (voiceUrlInput) voiceUrlInput.value = json.url;
+        if (voiceAudioPreview) voiceAudioPreview.src = json.url;
+        if (voicePreviewRow) voicePreviewRow.style.display = 'block';
+        showToast('🎙️ Voice audio uploaded! Click Save to apply.', 'success');
+      }
+    } catch (err) {
+      showToast('⚠️ Failed to upload audio.', 'error');
+    }
+  });
+
+  btnRemoveVoice?.addEventListener('click', () => {
+    S.voiceUrl = '';
+    if (voiceUrlInput) voiceUrlInput.value = '';
+    if (voiceAudioPreview) { voiceAudioPreview.src = ''; }
+    if (voicePreviewRow) voicePreviewRow.style.display = 'none';
+    showToast('Voice note removed. Click Save to apply.', 'info');
+  });
+
+  // Live Audio Recording
+  let mediaRecorder = null;
+  let audioChunks = [];
+  let recordTimer = null;
+  let recordSeconds = 0;
+
+  const btnRecordVoice = document.getElementById('btnRecordVoice');
+  const btnStopRecord = document.getElementById('btnStopRecord');
+  const voiceRecordStatus = document.getElementById('voiceRecordStatus');
+  const voiceRecordTime = document.getElementById('voiceRecordTime');
+
+  btnRecordVoice?.addEventListener('click', async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      mediaRecorder = new MediaRecorder(stream);
+      audioChunks = [];
+
+      mediaRecorder.ondataavailable = (e) => {
+        if (e.data.size > 0) audioChunks.push(e.data);
+      };
+
+      mediaRecorder.onstop = async () => {
+        stream.getTracks().forEach(t => t.stop());
+        const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+        const file = new File([audioBlob], `voice-wish-${Date.now()}.webm`, { type: 'audio/webm' });
+
+        showToast('⏳ Uploading recorded voice...', 'info');
+        const fd = new FormData();
+        fd.append('file', file);
+        try {
+          const res = await fetch('/api/upload', { method: 'POST', body: fd });
+          const json = await res.json();
+          if (json.success && json.url) {
+            S.voiceUrl = json.url;
+            if (voiceUrlInput) voiceUrlInput.value = json.url;
+            if (voiceAudioPreview) voiceAudioPreview.src = json.url;
+            if (voicePreviewRow) voicePreviewRow.style.display = 'block';
+            showToast('🎙️ Recorded voice saved & ready! Click Save to apply.', 'success');
+          }
+        } catch (err) {
+          showToast('⚠️ Error uploading recorded audio.', 'error');
+        }
+      };
+
+      mediaRecorder.start();
+      recordSeconds = 0;
+      if (voiceRecordStatus) voiceRecordStatus.style.display = 'flex';
+      if (btnRecordVoice) btnRecordVoice.style.display = 'none';
+
+      recordTimer = setInterval(() => {
+        recordSeconds++;
+        const mins = Math.floor(recordSeconds / 60);
+        const secs = recordSeconds % 60;
+        if (voiceRecordTime) voiceRecordTime.textContent = `${mins}:${secs < 10 ? '0' : ''}${secs}`;
+      }, 1000);
+
+      showToast('🔴 Recording voice... Speak clearly!', 'info');
+    } catch (err) {
+      showToast('⚠️ Microphone permission required to record.', 'error');
+    }
+  });
+
+  btnStopRecord?.addEventListener('click', () => {
+    if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+      mediaRecorder.stop();
+    }
+    clearInterval(recordTimer);
+    if (voiceRecordStatus) voiceRecordStatus.style.display = 'none';
+    if (btnRecordVoice) btnRecordVoice.style.display = 'inline-flex';
+  });
 })();
 
 // Initialize
