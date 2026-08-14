@@ -820,143 +820,258 @@ html, body {
   padding: 0 12px;
 }
 
-/* ========== PREMIUM FLOW BEACON (Sonar Style) ========== */
+/* ========== ULTRA-REFINED CELESTIAL FLOW CAPSULE ========== */
 .flow-indicator {
-  display: flex;
-  flex-direction: column;
+  display: inline-flex;
   align-items: center;
-  gap: 6px;
+  justify-content: center;
   margin-top: 10px;
   cursor: pointer;
   user-select: none;
   -webkit-tap-highlight-color: transparent;
-  transition: transform 0.3s ease;
+  text-decoration: none;
+  animation: celestialFloat 3.8s ease-in-out infinite alternate;
+  transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+  z-index: 10;
 }
 
 .flow-indicator:hover {
-  transform: translateY(5px);
+  transform: translateY(-4px) scale(1.03);
 }
 
-/* Sonar orb + 3 expanding rings */
-.beacon-wrap {
+.flow-capsule {
   position: relative;
-  width: 54px;
-  height: 54px;
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  justify-content: center;
+  gap: 12px;
+  padding: 8px 18px 8px 10px;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.12) 0%, rgba(255, 255, 255, 0.03) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border-radius: 100px;
+  box-shadow:
+    0 10px 32px rgba(0, 0, 0, 0.55),
+    0 0 24px var(--glass-glow),
+    inset 0 1px 0 rgba(255, 255, 255, 0.35),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.2);
+  overflow: hidden;
+  transition: all 0.35s ease;
 }
 
-.beacon-pulse-ring {
-  position: absolute;
-  inset: 0;
-  border-radius: 50%;
-  border: 1.5px solid var(--theme-secondary);
-  opacity: 0;
-  animation: beaconSonar 2.4s ease-out infinite;
+.flow-indicator:hover .flow-capsule {
+  border-color: var(--theme-secondary);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.18) 0%, rgba(255, 255, 255, 0.06) 100%);
+  box-shadow:
+    0 14px 40px rgba(0, 0, 0, 0.65),
+    0 0 35px var(--theme-secondary),
+    inset 0 1px 0 rgba(255, 255, 255, 0.45);
 }
 
-.beacon-pulse-ring:nth-child(1) { animation-delay: 0s; }
-.beacon-pulse-ring:nth-child(2) { animation-delay: 0.8s; }
-.beacon-pulse-ring:nth-child(3) { animation-delay: 1.6s; }
-
-@keyframes beaconSonar {
-  0%   { transform: scale(1);   opacity: 0.9; }
-  100% { transform: scale(3.4); opacity: 0; }
-}
-
-.beacon-orb {
-  width: 44px;
-  height: 44px;
+/* Starlight Jewel / Gem on Left */
+.flow-gem {
+  position: relative;
+  width: 36px;
+  height: 36px;
   border-radius: 50%;
   background: radial-gradient(circle at 35% 30%,
-    rgba(255, 255, 255, 0.35),
+    rgba(255, 255, 255, 0.45),
     var(--theme-primary) 55%,
     var(--theme-secondary) 100%);
-  box-shadow:
-    0 0 0 1px rgba(255,255,255,0.2),
-    0 0 20px var(--theme-glow),
-    0 0 45px var(--glass-glow),
-    inset 0 2px 4px rgba(255,255,255,0.45);
   display: flex;
   align-items: center;
   justify-content: center;
-  position: relative;
-  z-index: 2;
-  animation: orbBreath 3s ease-in-out infinite alternate;
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.3),
+    0 0 18px var(--theme-glow),
+    inset 0 2px 4px rgba(255, 255, 255, 0.5);
+  flex-shrink: 0;
+  transition: transform 0.35s ease, box-shadow 0.35s ease;
 }
 
-@keyframes orbBreath {
-  0%   { box-shadow: 0 0 20px var(--theme-glow), 0 0 40px var(--glass-glow), inset 0 2px 4px rgba(255,255,255,0.4); transform: scale(1); }
-  100% { box-shadow: 0 0 30px var(--theme-secondary), 0 0 65px var(--glass-glow), inset 0 2px 4px rgba(255,255,255,0.6); transform: scale(1.06); }
+.flow-indicator:hover .flow-gem {
+  transform: scale(1.08) rotate(6deg);
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.5),
+    0 0 26px var(--theme-secondary),
+    inset 0 2px 5px rgba(255, 255, 255, 0.7);
 }
 
-.beacon-icon {
-  font-size: 1.15rem;
+.flow-gem-icon {
+  font-size: 1.1rem;
   line-height: 1;
-  filter: drop-shadow(0 1px 3px rgba(0,0,0,0.6));
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.4));
 }
 
-.beacon-label {
-  font-family: var(--font-sans);
-  font-size: 0.72rem;
-  font-weight: 600;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--text-muted);
-  text-shadow: 0 0 10px var(--theme-glow);
+.flow-gem-halo {
+  position: absolute;
+  inset: -3px;
+  border-radius: 50%;
+  border: 1px solid var(--theme-secondary);
+  opacity: 0.5;
+  animation: gemHaloPulse 2.4s ease-in-out infinite alternate;
+  pointer-events: none;
 }
 
-/* Falling dot trail below beacon */
-.beacon-trail {
+@keyframes gemHaloPulse {
+  0% { transform: scale(1); opacity: 0.3; }
+  100% { transform: scale(1.22); opacity: 0.8; }
+}
+
+/* Text Group (Main + Sub) */
+.flow-text-group {
   display: flex;
   flex-direction: column;
+  align-items: flex-start;
+  gap: 1px;
+  text-align: left;
+}
+
+.flow-main-text {
+  font-family: var(--font-sans);
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  color: #ffffff;
+  white-space: nowrap;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.6);
+  transition: color 0.3s ease;
+}
+
+.flow-indicator:hover .flow-main-text {
+  color: #ffffff;
+  text-shadow: 0 0 12px var(--theme-glow);
+}
+
+.flow-sub-text {
+  font-family: var(--font-sans);
+  font-size: 0.65rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--theme-accent);
+  opacity: 0.85;
+  white-space: nowrap;
+}
+
+/* Right Arrow Starlight Glider */
+.flow-arrow-wrap {
+  display: flex;
   align-items: center;
-  gap: 4px;
-  margin-top: 2px;
-}
-
-.beacon-trail span {
-  display: block;
-  width: 4px;
-  height: 4px;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
   border-radius: 50%;
-  background: var(--theme-secondary);
-  filter: drop-shadow(0 0 4px var(--theme-secondary));
-  animation: trailDrop 1.4s ease-in-out infinite;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  margin-left: 2px;
+  transition: all 0.3s ease;
+  flex-shrink: 0;
 }
 
-.beacon-trail span:nth-child(1) { animation-delay: 0s;    opacity: 0.9; }
-.beacon-trail span:nth-child(2) { animation-delay: 0.22s; opacity: 0.65; width: 3px; height: 3px; }
-.beacon-trail span:nth-child(3) { animation-delay: 0.44s; opacity: 0.4;  width: 2px; height: 2px; }
+.flow-arrow-icon {
+  font-size: 0.68rem;
+  color: var(--theme-accent);
+  font-weight: 800;
+  transition: transform 0.3s ease;
+  display: inline-block;
+  animation: arrowGlide 1.8s ease-in-out infinite;
+}
 
-@keyframes trailDrop {
-  0%, 100% { opacity: 0; transform: translateY(-5px); }
-  50%       { opacity: 1; transform: translateY(0); }
+@keyframes arrowGlide {
+  0%, 100% { transform: translateX(0); opacity: 0.7; }
+  50% { transform: translateX(3px); opacity: 1; filter: drop-shadow(0 0 6px var(--theme-secondary)); }
+}
+
+.flow-indicator:hover .flow-arrow-wrap {
+  background: var(--theme-secondary);
+  border-color: var(--theme-secondary);
+  box-shadow: 0 0 12px var(--theme-secondary);
+}
+
+.flow-indicator:hover .flow-arrow-icon {
+  color: #fff;
+  transform: translateX(2px);
+}
+
+/* Diagonal Starlight Shimmer Sweep */
+.flow-capsule-shine {
+  position: absolute;
+  top: 0;
+  left: -130%;
+  width: 80%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.22), transparent);
+  transform: skewX(-25deg);
+  animation: capsuleShineSweep 5s ease-in-out infinite;
+  pointer-events: none;
+}
+
+@keyframes capsuleShineSweep {
+  0%, 60% { left: -130%; }
+  85%, 100% { left: 220%; }
+}
+
+@keyframes celestialFloat {
+  0% { transform: translateY(0); }
+  100% { transform: translateY(-4px); }
+}
+
+@media (max-width: 480px) {
+  .flow-capsule {
+    padding: 6px 14px 6px 8px;
+    gap: 10px;
+  }
+  .flow-gem {
+    width: 32px;
+    height: 32px;
+  }
+  .flow-gem-icon {
+    font-size: 0.95rem;
+  }
+  .flow-main-text {
+    font-size: 0.76rem;
+  }
+  .flow-sub-text {
+    font-size: 0.6rem;
+  }
+  .flow-arrow-wrap {
+    width: 20px;
+    height: 20px;
+  }
 }
 
 /* ================= SUBTLE BEGIN AGAIN ================= */
 .begin-again-wrap {
-  margin-top: 12px;
+  margin-top: 14px;
   text-align: center;
 }
 
 .begin-again-btn {
-  background: none;
-  border: none;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-radius: 100px;
   font-family: var(--font-sans);
-  font-size: 0.78rem;
-  letter-spacing: 0.1em;
-  color: var(--text-muted);
+  font-size: 0.76rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  color: var(--text-secondary);
   cursor: pointer;
-  opacity: 0.55;
-  transition: opacity 0.3s ease, color 0.3s ease;
-  padding: 6px 12px;
+  opacity: 0.85;
+  transition: all 0.3s ease;
+  padding: 8px 22px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
 }
 
 .begin-again-btn:hover {
   opacity: 1;
-  color: var(--theme-accent);
+  color: #fff;
+  border-color: var(--theme-secondary);
+  background: rgba(255, 255, 255, 0.12);
+  box-shadow: 0 0 22px var(--glass-glow);
+  transform: translateY(-2px);
 }
 
 .luxury-btn {
