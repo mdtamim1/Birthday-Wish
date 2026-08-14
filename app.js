@@ -594,60 +594,62 @@ function initThreeScene() {
   ringGroup = new THREE.Group();
 
   // Multi-sized 3D Floating Hearts orbiting in a majestic framing halo around the scene
-  const heartSizes = [0.85, 1.1, 0.7, 0.95, 0.8, 1.2, 0.65, 0.9, 0.75, 1.05, 0.6, 0.85];
+  const heartSizes = [1.15, 1.45, 0.95, 1.3, 1.1, 1.55, 0.85, 1.25, 1.05, 1.4, 0.9, 1.2];
   const heartCount = heartSizes.length;
 
   for (let h = 0; h < heartCount; h++) {
     const size = heartSizes[h];
     const geo = create3DHeartGeometry(size);
 
-    // Luxury Crystal Material with Refraction & Clearcoat
+    // Luxury Crystal Gemstone Material with Vivid Refraction & Glowing Clearcoat
     const isRuby = h % 3 === 0;
     const isGold = h % 3 === 1;
 
     const heartMat = new THREE.MeshPhysicalMaterial({
       color: isRuby ? (currentTheme.threeLight2 || 0xf43f5e) : (isGold ? 0xffd166 : (currentTheme.threeLight1 || 0xd946ef)),
-      emissive: isRuby ? 0x9f1239 : (isGold ? 0xb45309 : 0x701a75),
-      emissiveIntensity: 0.28,
-      metalness: 0.18,
-      roughness: 0.12,
-      transmission: 0.55,
-      thickness: 0.5,
-      ior: 1.52,
+      emissive: isRuby ? 0xe11d48 : (isGold ? 0xd97706 : 0xa21caf),
+      emissiveIntensity: 0.52,
+      metalness: 0.22,
+      roughness: 0.1,
+      transmission: 0.6,
+      thickness: 0.7,
+      ior: 1.55,
       transparent: true,
-      opacity: 0.86,
+      opacity: 0.92,
       clearcoat: 1.0,
-      clearcoatRoughness: 0.06
+      clearcoatRoughness: 0.04
     });
 
     const heartMesh = new THREE.Mesh(geo, heartMat);
 
-    // Golden Filigree Edge Outline
-    const edgeGeo = new THREE.EdgesGeometry(geo, 30);
+    // Golden Filigree Edge Outline for diamond reflection
+    const edgeGeo = new THREE.EdgesGeometry(geo, 28);
     const edgeMat = new THREE.LineBasicMaterial({
-      color: 0xffe699,
+      color: 0xfff0b3,
       transparent: true,
-      opacity: 0.65
+      opacity: 0.85
     });
     const edgeLine = new THREE.LineSegments(edgeGeo, edgeMat);
     heartMesh.add(edgeLine);
 
-    // Position in a wide framing ellipse around the typography (center text remains clean & readable)
+    // Position in a wide framing ellipse around the typography
     const angle = (Math.PI * 2 / heartCount) * h;
-    const radX = 3.2 + (h % 3) * 0.7; // Wide horizontal radius
-    const radY = 2.1 + (h % 2) * 0.5; // Vertical radius
+    const isMobile = window.innerWidth < 768;
+    const radX = (isMobile ? 2.4 : 3.4) + (h % 3) * 0.6;
+    const radY = (isMobile ? 2.5 : 2.0) + (h % 2) * 0.45;
     const x = Math.cos(angle) * radX;
     const y = Math.sin(angle) * radY + 0.1;
-    const z = -1.2 - ((h % 4) * 0.7); // Placed at pleasant background depth (-1.2 to -3.3)
+    const z = -0.6 - ((h % 4) * 0.55);
 
     heartMesh.position.set(x, y, z);
-    heartMesh.rotation.z = (Math.random() - 0.5) * 0.5;
-    heartMesh.rotation.y = (Math.random() - 0.5) * 0.8;
+    heartMesh.rotation.z = (Math.random() - 0.5) * 0.6;
+    heartMesh.rotation.y = (Math.random() - 0.5) * 0.9;
     heartMesh.userData = {
       isHeart: true,
       phase: h * 1.3,
       baseY: y,
-      speed: 0.4 + (h % 3) * 0.25
+      speed: 0.45 + (h % 3) * 0.25,
+      rotSpeed: 0.35 + (h % 2) * 0.25
     };
 
     ringGroup.add(heartMesh);
@@ -1517,23 +1519,38 @@ function updateMagicClock() {
   const clockSeconds = document.getElementById('clockSeconds');
   const clockNextBdayText = document.getElementById('clockNextBdayText');
 
-  // Check if birthdate is provided
-  if (!S.birthdate || S.showBirthdate === false) {
+  // Check if birthdate is enabled
+  if (S.showBirthdate === false) {
     clockCard.style.display = 'none';
     return;
   }
 
-  const birth = new Date(S.birthdate + 'T00:00:00');
   const now = new Date();
+  let birthYear = 2002;
+  let birthMonth = 7;
+  let birthDay = 15;
 
-  if (isNaN(birth.getTime()) || birth > now) {
-    clockCard.style.display = 'none';
-    return;
+  if (S.birthdate) {
+    const parts = S.birthdate.split('-');
+    if (parts.length === 3) {
+      let y = parseInt(parts[0], 10);
+      let m = parseInt(parts[1], 10) - 1;
+      let d = parseInt(parts[2], 10);
+      if (!isNaN(y) && !isNaN(m) && !isNaN(d)) {
+        if (y >= now.getFullYear()) {
+          y = 2002; // Default to 24 milestone if user picked current year in picker
+        }
+        birthYear = y;
+        birthMonth = m;
+        birthDay = d;
+      }
+    }
   }
 
+  const birth = new Date(birthYear, birthMonth, birthDay);
   clockCard.style.display = 'flex';
 
-  const diffMs = now.getTime() - birth.getTime();
+  const diffMs = Math.max(1000, now.getTime() - birth.getTime());
   const totalSeconds = Math.floor(diffMs / 1000);
   const totalHours = Math.floor(diffMs / (1000 * 60 * 60));
   const totalDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
