@@ -1331,135 +1331,153 @@ setup3DTypography();
 let introPlayed = false;
 
 function play3DCinematicIntro() {
+  if (introPlayed) return;
   introPlayed = true;
   const introOverlay = document.getElementById('introOverlay');
 
+  // Direct immediate CSS fade-out (bulletproof, zero delay)
+  if (introOverlay) {
+    introOverlay.style.pointerEvents = 'none';
+    introOverlay.style.transition = 'opacity 0.65s cubic-bezier(0.16, 1, 0.3, 1), transform 0.65s cubic-bezier(0.16, 1, 0.3, 1)';
+    introOverlay.style.opacity = '0';
+    introOverlay.style.transform = 'scale(1.18)';
+    setTimeout(() => {
+      introOverlay.style.display = 'none';
+    }, 700);
+  }
+
   // 1. Play magical whoosh + chimes
-  sfx.playWhoosh();
-  setTimeout(() => sfx.playChime(), 320);
+  try { sfx.playWhoosh(); } catch(e){}
+  setTimeout(() => { try { sfx.playChime(); } catch(e){} }, 320);
 
   // 2. Play background music
-  if (!isMusicPlaying && bgMusic && bgMusic.src) {
-    bgMusic.play().then(() => {
-      isMusicPlaying = true;
-      if (musicIcon) musicIcon.textContent = '🎵';
-      if (eqBars) eqBars.classList.add('playing');
-    }).catch(() => {});
-  }
-
-  // 3. Three.js Camera 3D Warp Entrance
-  if (camera) {
-    camera.position.z = 16;
-    gsap.to(camera.position, {
-      z: 6.2,
-      duration: 1.6,
-      ease: 'power3.out'
-    });
-  }
-
-  // 4. Torus Rings 3D Spin & Expansion
-  if (ringGroup) {
-    ringGroup.visible = true;
-    gsap.fromTo(ringGroup.scale, 
-      { x: 0.01, y: 0.01, z: 0.01 }, 
-      { x: 1, y: 1, z: 1, duration: 1.5, ease: 'back.out(2)' }
-    );
-    gsap.fromTo(ringGroup.rotation,
-      { z: 6, x: 4 },
-      { z: 0, x: 0, duration: 1.6, ease: 'power2.out' }
-    );
-  }
-
-  // 5. Hide Intro Overlay with explosion zoom
-  if (introOverlay) {
-    gsap.to(introOverlay, {
-      opacity: 0,
-      scale: 1.3,
-      duration: 0.7,
-      ease: 'power2.inOut',
-      onComplete: () => {
-        introOverlay.style.display = 'none';
-        introOverlay.style.pointerEvents = 'none';
-      }
-    });
-  }
-
-  // 6. Confetti & Supernova Fireworks Burst
-  launchConfetti(90);
-  setTimeout(() => launchConfetti(140), 450);
-
-  // 7. Letter-by-Letter 3D Sculpted Typography Entrance
-  const tl = gsap.timeline({ delay: 0.25 });
-
-  // Pre-Title Badge Drop
-  tl.fromTo('#heroBadge', 
-    { y: -40, opacity: 0, scale: 0.8 }, 
-    { y: 0, opacity: 1, scale: 1, duration: 0.5, ease: 'back.out(1.8)' }
-  );
-
-  // 'Happy' Letters Sweep
-  tl.fromTo('.happy-char', 
-    { y: -35, opacity: 0, scale: 0.4, rotateX: -60 }, 
-    { y: 0, opacity: 1, scale: 1, rotateX: 0, duration: 0.5, stagger: 0.05, ease: 'back.out(1.8)' },
-    '-=0.2'
-  );
-
-  // 'BIRTHDAY' 3D Letters Heavy Slam Impact
-  tl.fromTo('.bday-char', 
-    { y: -50, opacity: 0, scale: 2.0, rotateX: 70 }, 
-    { y: 0, opacity: 1, scale: 1, rotateX: 0, duration: 0.6, stagger: 0.06, ease: 'back.out(2)' },
-    '-=0.2'
-  );
-
-  // 'To You' Flourish
-  tl.fromTo('.toyou-char', 
-    { y: 25, opacity: 0, scale: 0.5 }, 
-    { y: 0, opacity: 1, scale: 1, duration: 0.5, stagger: 0.04, ease: 'back.out(1.8)' },
-    '-=0.2'
-  );
-
-  // Recipient Name Medallion Radial Shockwave
-  tl.fromTo('#nameWrapper', 
-    { scale: 0.4, opacity: 0 }, 
-    { scale: 1, opacity: 1, duration: 0.7, ease: 'elastic.out(1, 0.6)' },
-    '-=0.2'
-  );
-
-  // Subtitle, Date & CTAs
-  tl.fromTo('#specialText, #birthdateWrapper', 
-    { y: 20, opacity: 0 }, 
-    { y: 0, opacity: 1, duration: 0.5, stagger: 0.08, ease: 'power2.out' },
-    '-=0.3'
-  );
-
-  // Flow Indicator Fade In
-  tl.fromTo('#flowNext1',
-    { y: 16, opacity: 0 },
-    { y: 0, opacity: 0.85, duration: 0.55, ease: 'power2.out' },
-    '-=0.2'
-  );
-}
-
-// Intro Button Listeners
-const introUnlockBtn = document.getElementById('introUnlockBtn');
-if (introUnlockBtn) {
-  introUnlockBtn.addEventListener('click', () => {
-    if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
-      DeviceOrientationEvent.requestPermission().then(state => {
-        if (state === 'granted') {
-          window.addEventListener('deviceorientation', handleDeviceOrientation, { passive: true });
-        }
+  try {
+    if (bgMusic && bgMusic.src) {
+      bgMusic.play().then(() => {
+        isMusicPlaying = true;
+        if (musicIcon) musicIcon.textContent = '🎵';
+        if (eqBars) eqBars.classList.add('playing');
       }).catch(() => {});
     }
-    play3DCinematicIntro();
+  } catch(e){}
+
+  // 3. Three.js Camera 3D Warp Entrance
+  try {
+    if (camera && typeof gsap !== 'undefined') {
+      camera.position.z = 14;
+      gsap.to(camera.position, {
+        z: 6.2,
+        duration: 1.6,
+        ease: 'power3.out'
+      });
+    }
+  } catch(e){}
+
+  // 4. Gemstone Hearts 3D Spin & Expansion
+  try {
+    if (ringGroup && typeof gsap !== 'undefined') {
+      ringGroup.visible = true;
+      gsap.fromTo(ringGroup.scale, 
+        { x: 0.01, y: 0.01, z: 0.01 }, 
+        { x: 1, y: 1, z: 1, duration: 1.5, ease: 'back.out(2)' }
+      );
+    }
+  } catch(e){}
+
+  // 5. Confetti & Supernova Fireworks Burst
+  try { launchConfetti(90); } catch(e){}
+  setTimeout(() => { try { launchConfetti(140); } catch(e){} }, 450);
+
+  // 6. Letter-by-Letter 3D Sculpted Typography Entrance
+  try {
+    if (typeof gsap !== 'undefined') {
+      const tl = gsap.timeline({ delay: 0.15 });
+
+      tl.fromTo('#heroBadge', 
+        { y: -40, opacity: 0, scale: 0.8 }, 
+        { y: 0, opacity: 1, scale: 1, duration: 0.5, ease: 'back.out(1.8)' }
+      );
+
+      tl.fromTo('.happy-char', 
+        { y: -35, opacity: 0, scale: 0.4, rotateX: -60 }, 
+        { y: 0, opacity: 1, scale: 1, rotateX: 0, duration: 0.5, stagger: 0.05, ease: 'back.out(1.8)' },
+        '-=0.2'
+      );
+
+      tl.fromTo('.bday-char', 
+        { y: -50, opacity: 0, scale: 2.0, rotateX: 70 }, 
+        { y: 0, opacity: 1, scale: 1, rotateX: 0, duration: 0.6, stagger: 0.06, ease: 'back.out(2)' },
+        '-=0.2'
+      );
+
+      tl.fromTo('.toyou-char', 
+        { y: 25, opacity: 0, scale: 0.5 }, 
+        { y: 0, opacity: 1, scale: 1, duration: 0.5, stagger: 0.04, ease: 'back.out(1.8)' },
+        '-=0.2'
+      );
+
+      tl.fromTo('#nameWrapper', 
+        { scale: 0.4, opacity: 0 }, 
+        { scale: 1, opacity: 1, duration: 0.7, ease: 'elastic.out(1, 0.6)' },
+        '-=0.2'
+      );
+
+      tl.fromTo('#specialText, #birthdateWrapper, #magicClockCard', 
+        { y: 20, opacity: 0 }, 
+        { y: 0, opacity: 1, duration: 0.5, stagger: 0.08, ease: 'power2.out' },
+        '-=0.3'
+      );
+
+      tl.fromTo('#flowNext1',
+        { y: 16, opacity: 0 },
+        { y: 0, opacity: 0.85, duration: 0.55, ease: 'power2.out' },
+        '-=0.2'
+      );
+    }
+  } catch(e){}
+}
+window.play3DCinematicIntro = play3DCinematicIntro;
+
+// Intro Button Listeners (Click + PointerDown + Touch)
+function handleIntroUnlock(e) {
+  if (e) e.stopPropagation();
+  if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
+    DeviceOrientationEvent.requestPermission().then(state => {
+      if (state === 'granted') {
+        window.addEventListener('deviceorientation', handleDeviceOrientation, { passive: true });
+      }
+    }).catch(() => {});
+  }
+  play3DCinematicIntro();
+}
+
+const introUnlockBtn = document.getElementById('introUnlockBtn');
+if (introUnlockBtn) {
+  introUnlockBtn.addEventListener('click', handleIntroUnlock);
+  introUnlockBtn.addEventListener('pointerdown', handleIntroUnlock);
+}
+
+const introOverlay = document.getElementById('introOverlay');
+if (introOverlay) {
+  introOverlay.addEventListener('click', (e) => {
+    if (e.target === introOverlay || e.target.classList.contains('intro-backdrop')) {
+      handleIntroUnlock(e);
+    }
   });
 }
 
 const btnReplayIntro = document.getElementById('btnReplayIntro');
 if (btnReplayIntro) {
   btnReplayIntro.addEventListener('click', () => {
+    introPlayed = false;
+    const overlay = document.getElementById('introOverlay');
+    if (overlay) {
+      overlay.style.display = 'flex';
+      overlay.style.opacity = '1';
+      overlay.style.transform = 'scale(1)';
+      overlay.style.pointerEvents = 'auto';
+    }
     goToScene(0);
-    play3DCinematicIntro();
   });
 }
 
