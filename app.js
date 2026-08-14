@@ -235,10 +235,144 @@ function setupMusicListeners() {
     document.removeEventListener('click', autoMusicStarter);
   }, { once: true });
 }
+
+// ===== GIFT BOX & UNBOXING TOP-LEVEL DECLARATIONS =====
+let isGiftUnboxed = false;
+let giftBoxVisual = null;
+let giftLidWrap = null;
+let revealedGiftCard = null;
+let giftBoxRevealedImg = null;
+let revealedGiftCaption = null;
+let giftOpenBtn = null;
+let giftHeading = null;
+let giftMessage = null;
+
+function initGiftElements() {
+  if (!giftBoxVisual) giftBoxVisual = document.getElementById('giftBoxVisual');
+  if (!giftLidWrap) giftLidWrap = document.getElementById('giftLidWrap');
+  if (!revealedGiftCard) revealedGiftCard = document.getElementById('revealedGiftCard');
+  if (!giftBoxRevealedImg) giftBoxRevealedImg = document.getElementById('giftBoxRevealedImg');
+  if (!revealedGiftCaption) revealedGiftCaption = document.getElementById('revealedGiftCaption');
+  if (!giftOpenBtn) giftOpenBtn = document.getElementById('giftOpenBtn');
+  if (!giftHeading) giftHeading = document.getElementById('giftHeading');
+  if (!giftMessage) giftMessage = document.getElementById('giftMessage');
+}
+
+function getSurpriseGiftPhoto() {
+  if (S.giftPhoto && S.giftPhoto.trim()) return S.giftPhoto;
+  if (S.photo && S.photo.trim()) return S.photo;
+  if (S.photos && S.photos.length > 0 && S.photos[0]) return S.photos[0];
+  return (DEFAULT_SETTINGS && (DEFAULT_SETTINGS.giftPhoto || DEFAULT_SETTINGS.photo)) || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=600&q=80';
+}
+
+function updateGiftSurprisePhoto() {
+  initGiftElements();
+  const imgSrc = getSurpriseGiftPhoto();
+  if (giftBoxRevealedImg) {
+    giftBoxRevealedImg.src = imgSrc;
+  }
+  if (revealedGiftCaption) {
+    revealedGiftCaption.textContent = S.name ? (`For ${S.name} 💖`) : 'Wrapped with Love 💕';
+  }
+}
+
+function triggerGiftUnbox() {
+  initGiftElements();
+  if (isGiftUnboxed) {
+    const imgSrc = getSurpriseGiftPhoto();
+    openLightbox(imgSrc, (S.name ? `Special Surprise for ${S.name}` : 'Special Surprise'));
+    return;
+  }
+
+  isGiftUnboxed = true;
+  if (typeof sfx !== 'undefined' && sfx) {
+    sfx.playWhoosh();
+    setTimeout(() => sfx.playChime(), 200);
+  }
+
+  updateGiftSurprisePhoto();
+
+  // 1. Box slight wiggle / anticipating shake
+  if (typeof gsap !== 'undefined') {
+    gsap.to('#giftBoxBody', {
+      x: 6,
+      duration: 0.06,
+      yoyo: true,
+      repeat: 5,
+      ease: 'power1.inOut',
+      onComplete: () => {
+        gsap.to('#giftBoxBody', { x: 0, duration: 0.1 });
+      }
+    });
+
+    // 2. 3D Lid flies off and spins upwards
+    if (giftLidWrap) {
+      gsap.to(giftLidWrap, {
+        y: -130,
+        x: 35,
+        rotationX: -110,
+        rotationZ: 45,
+        opacity: 0,
+        scale: 0.8,
+        duration: 0.95,
+        ease: 'power2.out'
+      });
+    }
+
+    // 3. Floating surprise photo emerges from inside the box
+    if (revealedGiftCard) {
+      revealedGiftCard.style.display = 'block';
+      gsap.fromTo(revealedGiftCard,
+        { scale: 0.15, y: 60, opacity: 0, rotationZ: -12 },
+        { scale: 1, y: -70, opacity: 1, rotationZ: 0, duration: 1.15, delay: 0.15, ease: 'back.out(2.2)' }
+      );
+    }
+  } else {
+    if (giftLidWrap) giftLidWrap.style.display = 'none';
+    if (revealedGiftCard) revealedGiftCard.style.display = 'block';
+  }
+
+  // 4. Confetti Celebration
+  launchConfetti(220);
+
+  // 5. Update info panel
+  if (giftHeading) {
+    giftHeading.textContent = '🎉 SURPRISE UNLOCKED! 💖';
+  }
+  if (giftOpenBtn) {
+    giftOpenBtn.innerHTML = `
+      <span class="btn-glow-layer"></span>
+      <span class="btn-icon">🔍</span>
+      <span class="btn-text">Tap Photo to Enlarge</span>
+      <span class="btn-sparkle">✨</span>
+    `;
+    giftOpenBtn.style.background = 'linear-gradient(135deg, #10b981, #34d399)';
+    giftOpenBtn.style.borderColor = 'rgba(52, 211, 153, 0.6)';
+    giftOpenBtn.style.boxShadow = '0 10px 30px rgba(16, 185, 129, 0.4)';
+  }
+}
+
+function setupGiftListeners() {
+  initGiftElements();
+  if (giftOpenBtn) giftOpenBtn.onclick = triggerGiftUnbox;
+  if (giftBoxVisual) giftBoxVisual.onclick = triggerGiftUnbox;
+  if (revealedGiftCard) {
+    revealedGiftCard.onclick = (e) => {
+      e.stopPropagation();
+      const imgSrc = getSurpriseGiftPhoto();
+      openLightbox(imgSrc, (S.name ? `Special Surprise for ${S.name}` : 'Special Surprise'));
+    };
+  }
+}
+
 if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', setupMusicListeners);
+  document.addEventListener('DOMContentLoaded', () => {
+    setupMusicListeners();
+    setupGiftListeners();
+  });
 } else {
   setupMusicListeners();
+  setupGiftListeners();
 }
 
 // ===== SYNTHETIC AUDIO ENGINE =====
@@ -834,10 +968,21 @@ function animateThree() {
   renderer.render(scene, camera);
 }
 
+function getResponsiveCamZ(baseZ) {
+  const aspect = window.innerWidth / window.innerHeight;
+  if (aspect < 0.6) {
+    return baseZ * 1.36; // standard mobile portrait
+  } else if (aspect < 0.85) {
+    return baseZ * 1.18; // narrow tablet or fold phone
+  }
+  return baseZ;
+}
 // ===== CAMERA DIRECTOR & SCENE SWITCHING =====
 function goToScene(index) {
   if (index < 0 || index > 3) return;
   currentSceneIndex = index;
+
+  const isMobile = window.innerWidth < 768 || (window.innerWidth / window.innerHeight) < 0.75;
 
   // Update DOM panels
   const panels = document.querySelectorAll('.scene-panel');
@@ -857,43 +1002,64 @@ function goToScene(index) {
     const content = activePanel.querySelector('.scene-content');
     if (content) {
       gsap.fromTo(content,
-        { opacity: 0, y: 24 },
-        { opacity: 1, y: 0, duration: 0.55, ease: 'power2.out' }
+        { opacity: 0, y: 20 },
+        { opacity: 1, y: 0, duration: 0.5, ease: 'power2.out' }
       );
     }
     // Animate flow indicator in (delay a bit)
     const flowInd = activePanel.querySelector('.flow-indicator');
     if (flowInd) {
       gsap.fromTo(flowInd,
-        { opacity: 0, y: 14 },
-        { opacity: 0.85, y: 0, duration: 0.5, delay: 0.4, ease: 'power2.out' }
+        { opacity: 0, y: 12 },
+        { opacity: 0.85, y: 0, duration: 0.45, delay: 0.35, ease: 'power2.out' }
       );
     }
   }
 
   // Direct 3D Camera & Objects based on Scene
   if (index === 0) {
-    targetCameraX = 0; targetCameraY = 0; targetCameraZ = 6.2; targetLookAtY = 0;
+    targetCameraX = 0;
+    targetCameraY = isMobile ? 0.15 : 0;
+    targetCameraZ = getResponsiveCamZ(6.2);
+    targetLookAtY = 0;
     if (ringGroup) ringGroup.visible = true;
     if (cakeGroup) cakeGroup.visible = false;
     if (orbitPhotosGroup) orbitPhotosGroup.visible = false;
   } else if (index === 1) {
-    targetCameraX = 0; targetCameraY = 0.48; targetCameraZ = 5.4; targetLookAtY = 0.35;
+    targetCameraX = 0;
+    targetCameraY = isMobile ? 0.36 : 0.48;
+    targetCameraZ = getResponsiveCamZ(5.4);
+    targetLookAtY = isMobile ? 0.58 : 0.35;
     if (ringGroup) ringGroup.visible = false;
+
+    const cakeScale = isMobile ? 0.75 : 0.92;
+    const orbitScale = isMobile ? 0.82 : 1.0;
+
     if (cakeGroup) {
       cakeGroup.visible = true;
+      cakeGroup.position.y = isMobile ? 0.42 : 0;
       if (typeof gsap !== 'undefined') {
-        gsap.fromTo(cakeGroup.scale, { x: 0.1, y: 0.1, z: 0.1 }, { x: 0.92, y: 0.92, z: 0.92, duration: 0.9, ease: 'back.out(1.8)' });
+        gsap.fromTo(cakeGroup.scale,
+          { x: 0.1, y: 0.1, z: 0.1 },
+          { x: cakeScale, y: cakeScale, z: cakeScale, duration: 0.85, ease: 'back.out(1.8)' }
+        );
       }
     }
     if (orbitPhotosGroup) {
       orbitPhotosGroup.visible = true;
+      orbitPhotosGroup.position.y = isMobile ? 0.45 : 0.05;
       if (typeof gsap !== 'undefined') {
-        gsap.fromTo(orbitPhotosGroup.scale, { x: 0.1, y: 0.1, z: 0.1 }, { x: 1, y: 1, z: 1, duration: 1.0, ease: 'back.out(1.6)' });
+        gsap.fromTo(orbitPhotosGroup.scale,
+          { x: 0.1, y: 0.1, z: 0.1 },
+          { x: orbitScale, y: orbitScale, z: orbitScale, duration: 0.95, ease: 'back.out(1.6)' }
+        );
       }
     }
   } else if (index === 2) {
-    targetCameraX = 0; targetCameraY = 0.3; targetCameraZ = 5.5; targetLookAtY = 0;
+    targetCameraX = 0;
+    targetCameraY = 0.3;
+    targetCameraZ = getResponsiveCamZ(5.5);
+    targetLookAtY = 0;
     if (ringGroup) ringGroup.visible = true;
     if (cakeGroup) cakeGroup.visible = false;
     if (orbitPhotosGroup) orbitPhotosGroup.visible = false;
@@ -901,7 +1067,10 @@ function goToScene(index) {
       startLetterTyping();
     }
   } else if (index === 3) {
-    targetCameraX = 0; targetCameraY = -0.1; targetCameraZ = 5.0; targetLookAtY = 0;
+    targetCameraX = 0;
+    targetCameraY = -0.1;
+    targetCameraZ = getResponsiveCamZ(5.0);
+    targetLookAtY = 0;
     if (ringGroup) ringGroup.visible = true;
     if (cakeGroup) cakeGroup.visible = false;
     if (orbitPhotosGroup) orbitPhotosGroup.visible = false;
@@ -1225,6 +1394,7 @@ function applyLiveUpdate(newSettings, isInitial = false) {
   // 8. Photos & Galleries
   if (typeof window.setupOrbitCards === 'function') window.setupOrbitCards();
   if (typeof window.setupMemoriesReel === 'function') window.setupMemoriesReel();
+  if (typeof updateGiftSurprisePhoto === 'function') updateGiftSurprisePhoto();
 
   // 9. Music URL
   if (typeof bgMusic !== 'undefined' && bgMusic && S.musicUrl && bgMusic.src !== S.musicUrl) {
@@ -1382,21 +1552,6 @@ window.addEventListener('wheel', (e) => {
   }
 }, { passive: true });
 
-// ===== GIFT UNBOXING & PRECIOUS MEMORIES REEL =====
-const giftCard = document.getElementById('giftCard');
-const giftOpenBtn = document.getElementById('giftOpenBtn');
-const giftHeading = document.getElementById('giftHeading');
-const giftMessage = document.getElementById('giftMessage');
-
-if (giftOpenBtn) {
-  giftOpenBtn.addEventListener('click', () => {
-    sfx.playChime();
-    launchConfetti(160);
-    giftHeading.textContent = '🎉 SURPRISE UNLOCKED! 💖';
-    giftOpenBtn.innerHTML = '<span>💝 Opened with Love!</span>';
-    giftOpenBtn.style.background = 'linear-gradient(135deg, #10b981, #34d399)';
-  });
-}
 
 // ===== POPULATE ORBIT PHOTO CARDS (Scene 2 Cake) =====
 function setupOrbitCards() {

@@ -1172,91 +1172,114 @@ html, body {
   pointer-events: auto !important;
 }
 
-.cake-center-ctrl { display: none; }
-
-.blow-orb-btn {
+/* ================= LUXURY BLOW CANDLES BUTTON ================= */
+.luxury-blow-btn {
   position: relative;
-  background: none;
-  border: none;
-  cursor: pointer;
-  display: flex;
-  flex-direction: column;
+  display: inline-flex;
   align-items: center;
-  gap: 8px;
-  -webkit-tap-highlight-color: transparent;
-  transition: transform 0.3s ease;
+  gap: 14px;
+  padding: 10px 24px 10px 16px;
+  border-radius: 100px;
+  background: linear-gradient(135deg, rgba(30, 16, 48, 0.85), rgba(18, 10, 32, 0.92));
+  border: 1.5px solid rgba(255, 255, 255, 0.22);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  box-shadow: 0 10px 32px rgba(0, 0, 0, 0.55), 0 0 24px var(--theme-glow, rgba(218, 94, 201, 0.35));
+  cursor: pointer;
+  overflow: hidden;
+  transition: all 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
   pointer-events: auto !important;
+  text-decoration: none;
+  -webkit-tap-highlight-color: transparent;
 }
 
-.blow-orb-btn:hover {
-  transform: scale(1.08);
+.luxury-blow-btn:hover {
+  transform: translateY(-3px) scale(1.03);
+  border-color: var(--theme-secondary);
+  box-shadow: 0 16px 44px rgba(0, 0, 0, 0.65), 0 0 38px var(--theme-secondary);
 }
 
-/* Expanding glow rings */
-.blow-ring {
+.luxury-blow-btn:active {
+  transform: scale(0.97);
+}
+
+.blow-btn-glow {
   position: absolute;
-  border-radius: 50%;
-  border: 1.5px solid var(--theme-secondary);
-  opacity: 0;
+  inset: -100%;
+  background: radial-gradient(circle at center, var(--theme-glow, rgba(218, 94, 201, 0.25)) 0%, transparent 65%);
+  opacity: 0.6;
   pointer-events: none;
-  animation: blowRingExpand 2.8s ease-out infinite;
+  animation: blowGlowRotate 6s linear infinite;
 }
 
-.blow-ring-1 { inset: -4px;  animation-delay: 0s; }
-.blow-ring-2 { inset: -4px;  animation-delay: 0.9s; }
-.blow-ring-3 { inset: -4px;  animation-delay: 1.8s; }
-
-@keyframes blowRingExpand {
-  0%   { transform: scale(1);   opacity: 0.85; }
-  100% { transform: scale(3.8); opacity: 0; }
+@keyframes blowGlowRotate {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
 }
 
-/* Core glowing orb */
-.blow-core {
-  position: relative;
-  z-index: 2;
-  width: 76px; height: 76px;
+.blow-btn-icon-wrap {
+  width: 40px;
+  height: 40px;
   border-radius: 50%;
-  background: radial-gradient(circle at 35% 28%,
-    rgba(255,255,255,0.45),
-    var(--theme-primary) 50%,
-    var(--theme-secondary) 100%);
+  background: linear-gradient(135deg, var(--theme-primary), var(--theme-secondary));
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow:
-    0 0 0 2px rgba(255,255,255,0.18),
-    0 0 25px var(--theme-glow),
-    0 0 55px var(--glass-glow),
-    inset 0 2px 6px rgba(255,255,255,0.5);
-  animation: blowCoreGlow 2.5s ease-in-out infinite alternate;
-}
-
-@keyframes blowCoreGlow {
-  0%   { transform: scale(1);    box-shadow: 0 0 25px var(--theme-glow), 0 0 55px var(--glass-glow), inset 0 2px 5px rgba(255,255,255,0.4); }
-  100% { transform: scale(1.1);  box-shadow: 0 0 40px var(--theme-secondary), 0 0 90px var(--glass-glow), inset 0 2px 5px rgba(255,255,255,0.65); }
+  box-shadow: 0 0 14px var(--theme-glow);
+  flex-shrink: 0;
+  position: relative;
+  z-index: 2;
 }
 
 .blow-wind-icon {
-  font-size: 1.8rem;
-  filter: drop-shadow(0 0 8px rgba(255,255,255,0.6));
-  display: block;
-  animation: windWobble 1.6s ease-in-out infinite alternate;
+  font-size: 1.25rem;
+  line-height: 1;
+  display: inline-block;
+  animation: windGentleFloat 2s ease-in-out infinite alternate;
 }
 
-@keyframes windWobble {
-  0%   { transform: scale(1) rotate(-5deg); }
-  100% { transform: scale(1.12) rotate(5deg); }
+@keyframes windGentleFloat {
+  0% { transform: translateX(-1px) scale(0.95); }
+  100% { transform: translateX(2px) scale(1.08); }
 }
 
-.blow-orb-label {
+.blow-btn-text-group {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  text-align: left;
+  position: relative;
+  z-index: 2;
+}
+
+.blow-btn-main {
   font-family: var(--font-sans);
-  font-size: 0.7rem;
+  font-size: 0.88rem;
   font-weight: 700;
-  letter-spacing: 0.14em;
+  color: #ffffff;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.6);
+}
+
+.blow-btn-sub {
+  font-family: var(--font-sans);
+  font-size: 0.64rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: var(--text-muted);
-  text-shadow: 0 0 12px var(--theme-glow);
+  color: var(--theme-accent);
+  opacity: 0.9;
+  white-space: nowrap;
+}
+
+.blow-btn-sparkle {
+  font-size: 1.15rem;
+  margin-left: 2px;
+  filter: drop-shadow(0 0 6px var(--theme-secondary));
+  position: relative;
+  z-index: 2;
 }
 
 /* ====== WISH BANNER ====== */
@@ -1555,6 +1578,107 @@ html, body {
   width: 110px;
   height: 92px;
   margin-top: 32px;
+  z-index: 2;
+  transition: transform 0.4s ease;
+}
+
+/* 3D Separate Lid Wrap */
+.gbox-lid-wrap {
+  position: absolute;
+  top: 34px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 114px;
+  height: 32px;
+  z-index: 10;
+  transform-style: preserve-3d;
+  transform-origin: top center;
+  transition: transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+  pointer-events: none;
+}
+
+/* =================== FLOATING REVEALED SURPRISE PHOTO =================== */
+.gift-revealed-card {
+  position: absolute;
+  top: -15px;
+  left: 50%;
+  transform: translateX(-50%) translateY(0);
+  z-index: 6;
+  width: 145px;
+  background: linear-gradient(145deg, rgba(35, 18, 55, 0.95), rgba(18, 10, 30, 0.98));
+  border: 2px solid rgba(255, 255, 255, 0.35);
+  border-radius: 18px;
+  padding: 8px 8px 10px;
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  box-shadow: 0 16px 45px rgba(0, 0, 0, 0.75), 0 0 35px var(--theme-glow, rgba(218, 94, 201, 0.6));
+  cursor: pointer;
+  animation: photoGlowPulse 3s ease-in-out infinite alternate;
+  pointer-events: auto !important;
+}
+
+@keyframes photoGlowPulse {
+  0% { box-shadow: 0 16px 40px rgba(0, 0, 0, 0.75), 0 0 25px var(--theme-glow, rgba(218, 94, 201, 0.4)); transform: translateX(-50%) translateY(0); }
+  100% { box-shadow: 0 22px 55px rgba(0, 0, 0, 0.85), 0 0 45px var(--theme-secondary, rgba(236, 72, 153, 0.7)); transform: translateX(-50%) translateY(-6px); }
+}
+
+.gift-revealed-card:hover {
+  transform: translateX(-50%) translateY(-10px) scale(1.05) !important;
+  border-color: var(--theme-accent) !important;
+}
+
+.revealed-card-inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+}
+
+.revealed-badge {
+  font-family: var(--font-sans);
+  font-size: 0.52rem;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  color: var(--theme-accent);
+  margin-bottom: 5px;
+  text-shadow: 0 0 8px var(--theme-glow);
+}
+
+.revealed-img-frame {
+  width: 100%;
+  aspect-ratio: 1;
+  border-radius: 12px;
+  overflow: hidden;
+  position: relative;
+  background: #0d0618;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.revealed-img-frame img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.revealed-frame-shine {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.25) 0%, transparent 45%);
+  pointer-events: none;
+}
+
+.revealed-caption {
+  font-family: var(--font-script);
+  font-size: 0.95rem;
+  color: #ffffff;
+  margin-top: 6px;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+  text-shadow: 0 0 10px rgba(255, 255, 255, 0.4);
 }
 
 /* Front face */
@@ -1616,7 +1740,7 @@ html, body {
 /* Top face (lid) */
 .gbox-face.gbox-top {
   position: absolute;
-  top: -28px; left: -2px;
+  top: 0; left: 0;
   width: 114px; height: 32px;
   background: linear-gradient(130deg, #a855f7 0%, #7c3aed 60%, #6d28d9 100%);
   border-radius: 4px 4px 0 0;
@@ -1992,14 +2116,41 @@ html, body {
   margin-top: 6px;
 }
 
-/* ================= RESPONSIVE ADJUSTMENTS ================= */
-@media (max-width: 600px) {
-  .top-nav-bar {
-    top: 10px;
-    padding: 0 10px;
+/* ================= COMPREHENSIVE RESPONSIVE ADJUSTMENTS ================= */
+@media (max-width: 768px) {
+  .hero-title {
+    font-size: clamp(2.6rem, 8.5vw, 4.4rem);
   }
-  .dynamic-island {
-    padding: 5px 10px;
+  .title-happy { margin-bottom: -8px; }
+  .title-toyou { margin-top: -8px; }
+  
+  .cake-scene-content {
+    padding-bottom: 18px !important;
+  }
+  .cake-controls-zone {
+    gap: 10px;
+    padding-bottom: 8px;
+  }
+  
+  .letter-card-wrapper {
+    max-width: 92vw;
+  }
+  .letter-card {
+    padding: 24px 20px;
+  }
+  
+  .gift-showcase {
+    max-width: 94vw;
+  }
+}
+
+@media (max-width: 480px) {
+  .top-nav-bar {
+    top: 8px;
+    padding: 0 8px;
+  }
+  .music-pill {
+    padding: 5px 12px 5px 6px;
     gap: 6px;
   }
   .music-title {
@@ -2008,58 +2159,144 @@ html, body {
   .equalizer-bars {
     display: none;
   }
-  .theme-pill-btn {
-    padding: 6px 10px;
-    font-size: 0.75rem;
-  }
+  
   .scene-panel {
-    padding: 70px 14px 85px;
+    padding: 55px 10px 75px;
   }
+  
   .luxury-badge {
-    padding: 5px 14px;
-    gap: 6px;
+    padding: 4px 12px;
+    gap: 5px;
   }
   .badge-text {
-    font-size: 0.68rem;
-    letter-spacing: 0.16em;
+    font-size: 0.64rem;
+    letter-spacing: 0.14em;
   }
-  .title-happy {
-    margin-bottom: -8px;
+  
+  .hero-title {
+    font-size: clamp(2.2rem, 9.5vw, 3.4rem);
+    margin-bottom: 12px;
   }
-  .title-toyou {
-    margin-top: -8px;
+  .title-happy { margin-bottom: -6px; }
+  .title-toyou { margin-top: -6px; }
+  
+  .recipient-medallion {
+    max-width: 92vw;
+    margin: 6px 0;
   }
   .medallion-inner {
-    padding: 8px 22px;
+    padding: 6px 16px;
+    gap: 8px;
+  }
+  .recipient-name {
+    font-size: clamp(1.25rem, 5.2vw, 1.85rem);
+    letter-spacing: 0.04em;
+  }
+  
+  .special-quote {
+    font-size: clamp(0.85rem, 3.4vw, 1.05rem);
+    max-width: 90vw;
+    margin: 8px auto 14px;
+    line-height: 1.5;
+  }
+  
+  /* Cake Scene Mobile Refinements */
+  .cake-scene-content {
+    padding-bottom: 14px !important;
+  }
+  .cake-controls-zone {
+    gap: 8px;
+    padding-bottom: 6px;
+  }
+  
+  .luxury-blow-btn {
+    padding: 8px 18px 8px 12px;
     gap: 10px;
+    max-width: 92vw;
   }
-  .letter-card {
-    padding: 22px 18px;
+  .blow-btn-icon-wrap {
+    width: 34px;
+    height: 34px;
   }
-  .letter-body {
-    font-size: 1.3rem;
-    line-height: 1.6;
+  .blow-wind-icon {
+    font-size: 1.1rem;
   }
-  .bottom-nav-dock {
-    bottom: 12px;
+  .blow-btn-main {
+    font-size: 0.78rem;
   }
-  .dock-btn {
-    padding: 6px 12px;
+  .blow-btn-sub {
+    font-size: 0.58rem;
   }
-  .dock-label {
+  .blow-btn-sparkle {
+    font-size: 1rem;
+  }
+  
+  .flow-capsule {
+    padding: 5px 12px 5px 6px;
+    gap: 8px;
+    max-width: 92vw;
+  }
+  .flow-gem {
+    width: 28px;
+    height: 28px;
+  }
+  .flow-gem-icon {
+    font-size: 0.85rem;
+  }
+  .flow-main-text {
     font-size: 0.72rem;
   }
-}
-
-@media (max-width: 380px) {
-  .theme-btn-label {
-    display: none;
+  .flow-sub-text {
+    font-size: 0.56rem;
   }
-  .dock-label {
-    display: none;
+  
+  .cut-cake-premium-btn {
+    padding: 10px 20px;
+    font-size: 0.82rem;
+    gap: 6px;
   }
-  .dock-btn {
-    padding: 8px 12px;
+  
+  /* Letter Scene Mobile */
+  .letter-card-wrapper {
+    max-width: 94vw;
+  }
+  .letter-card {
+    padding: 18px 14px;
+    border-radius: 20px;
+  }
+  .letter-body {
+    font-size: clamp(1.1rem, 3.8vw, 1.35rem);
+    line-height: 1.55;
+  }
+  .letter-header {
+    gap: 6px;
+  }
+  .letter-title {
+    font-size: 1rem;
+  }
+  
+  /* Gift Scene Mobile */
+  .gift-showcase {
+    max-width: 94vw;
+    padding: 0;
+  }
+  .gift-3d-stage {
+    transform: scale(0.82);
+    margin-bottom: -18px;
+  }
+  .gift-info-panel {
+    padding: 14px 12px;
+  }
+  .gift-reveal-heading {
+    font-size: 1.1rem;
+  }
+  .gift-reveal-msg {
+    font-size: 0.84rem;
+    line-height: 1.45;
+  }
+  .gift-open-btn {
+    padding: 11px 22px;
+    font-size: 0.86rem;
   }
 }
 

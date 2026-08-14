@@ -127,15 +127,17 @@
       <!-- Clean Controls Zone Positioned at Bottom Below WebGL 3D Cake -->
       <div class="cake-controls-zone" id="cakeControlsZone">
 
-        <!-- Blow candle premium orb -->
-        <button class="blow-orb-btn" id="blowCandleBtn" aria-label="Make a Wish and Blow Candles">
-          <div class="blow-ring blow-ring-1"></div>
-          <div class="blow-ring blow-ring-2"></div>
-          <div class="blow-ring blow-ring-3"></div>
-          <div class="blow-core">
+        <!-- Ultra-Luxury Blow Candle Action Button -->
+        <button class="luxury-blow-btn" id="blowCandleBtn" aria-label="Make a Wish and Blow Candles">
+          <span class="blow-btn-glow"></span>
+          <span class="blow-btn-icon-wrap">
             <span class="blow-wind-icon">🌬️</span>
-          </div>
-          <span class="blow-orb-label">Tap to Blow Candles</span>
+          </span>
+          <span class="blow-btn-text-group">
+            <span class="blow-btn-main">Make a Wish & Blow Candles</span>
+            <span class="blow-btn-sub">Tap to Blow ✦</span>
+          </span>
+          <span class="blow-btn-sparkle">🎂</span>
         </button>
 
         <!-- Wish banner (shows on blow) -->
@@ -249,12 +251,24 @@
           <div class="gift-pedestal-glow"></div>
 
           <!-- CSS 3D Box -->
-          <div class="css-gift-box" id="giftBoxVisual">
+          <div class="css-gift-box" id="giftBoxVisual" title="Tap to open your surprise!">
             <!-- Inner aura -->
             <div class="gift-inner-aura"></div>
 
-            <!-- Box body (3 visible faces via CSS) -->
-            <div class="gbox-body">
+            <!-- Floating Surprise Photo (Rises majestically on unboxing) -->
+            <div class="gift-revealed-card" id="revealedGiftCard" style="display:none;">
+              <div class="revealed-card-inner">
+                <div class="revealed-badge">✨ SPECIAL SURPRISE ✨</div>
+                <div class="revealed-img-frame" id="revealedImgFrame">
+                  <img src="" alt="Special Surprise Photo" id="giftBoxRevealedImg" />
+                  <div class="revealed-frame-shine"></div>
+                </div>
+                <div class="revealed-caption" id="revealedGiftCaption">Forever with Love 💕</div>
+              </div>
+            </div>
+
+            <!-- Box body (visible faces) -->
+            <div class="gbox-body" id="giftBoxBody">
               <!-- Front face -->
               <div class="gbox-face gbox-front">
                 <div class="gbox-ribbon-v"></div>
@@ -262,20 +276,24 @@
               </div>
               <!-- Right face (depth illusion) -->
               <div class="gbox-face gbox-right"></div>
+            </div>
+
+            <!-- 3D Separate Lid Wrap (Flies up and rotates on unbox) -->
+            <div class="gbox-lid-wrap" id="giftLidWrap">
               <!-- Top face -->
               <div class="gbox-face gbox-top">
                 <div class="gbox-ribbon-v"></div>
                 <div class="gbox-ribbon-h"></div>
               </div>
-            </div>
 
-            <!-- Bow on top -->
-            <div class="gift-bow">
-              <div class="bow-loop bow-l"></div>
-              <div class="bow-loop bow-r"></div>
-              <div class="bow-knot"></div>
-              <div class="bow-tail bow-tl"></div>
-              <div class="bow-tail bow-tr"></div>
+              <!-- Bow on top -->
+              <div class="gift-bow" id="giftBow">
+                <div class="bow-loop bow-l"></div>
+                <div class="bow-loop bow-r"></div>
+                <div class="bow-knot"></div>
+                <div class="bow-tail bow-tl"></div>
+                <div class="bow-tail bow-tr"></div>
+              </div>
             </div>
 
             <!-- Orbiting sparkle particles -->
