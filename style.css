@@ -1950,18 +1950,19 @@ html, body {
 /* =================== FLOATING REVEALED SURPRISE PHOTO =================== */
 .gift-revealed-card {
   position: absolute;
-  top: -15px;
+  top: -25px;
   left: 50%;
   transform: translateX(-50%) translateY(0);
-  z-index: 6;
-  width: 145px;
-  background: linear-gradient(145deg, rgba(35, 18, 55, 0.95), rgba(18, 10, 30, 0.98));
-  border: 2px solid rgba(255, 255, 255, 0.35);
-  border-radius: 18px;
-  padding: 8px 8px 10px;
-  backdrop-filter: blur(24px);
-  -webkit-backdrop-filter: blur(24px);
-  box-shadow: 0 16px 45px rgba(0, 0, 0, 0.75), 0 0 35px var(--theme-glow, rgba(218, 94, 201, 0.6));
+  z-index: 25;
+  width: 165px;
+  max-width: 85vw;
+  background: linear-gradient(145deg, rgba(35, 18, 55, 0.98), rgba(18, 10, 30, 0.99));
+  border: 2.5px solid rgba(255, 215, 0, 0.6);
+  border-radius: 20px;
+  padding: 10px 10px 12px;
+  backdrop-filter: blur(28px);
+  -webkit-backdrop-filter: blur(28px);
+  box-shadow: 0 20px 55px rgba(0, 0, 0, 0.85), 0 0 45px rgba(245, 158, 11, 0.65);
   cursor: pointer;
   animation: photoGlowPulse 3s ease-in-out infinite alternate;
   pointer-events: auto !important;
@@ -1973,8 +1974,9 @@ html, body {
 }
 
 .gift-revealed-card:hover {
-  transform: translateX(-50%) translateY(-10px) scale(1.05) !important;
-  border-color: var(--theme-accent) !important;
+  transform: translateX(-50%) translateY(-10px) scale(1.06) !important;
+  border-color: #ffd700 !important;
+  box-shadow: 0 25px 65px rgba(0,0,0,0.9), 0 0 50px rgba(255,215,0,0.8) !important;
 }
 
 .revealed-card-inner {

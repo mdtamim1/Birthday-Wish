@@ -55,7 +55,7 @@ const DEFAULT_SETTINGS = {
   voiceUrl: '',
   showVoiceNote: true,
   voiceTitle: 'A Special Voice Message from the Heart 💖',
-  adminPassword: 'birthday123'
+  adminPassword: '01905'
 };
 
 // ===== DATABASE INITIALIZATION (SQLite) =====
@@ -272,8 +272,16 @@ app.post('/api/reset', (req, res) => {
   }
 });
 
-// Serve frontend static files
-app.use(express.static(__dirname));
+// Serve frontend static files with anti-cache headers
+app.use(express.static(__dirname, {
+  setHeaders: (res, filePath) => {
+    if (filePath.endsWith('.html') || filePath.endsWith('.js') || filePath.endsWith('.css')) {
+      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+      res.setHeader('Pragma', 'no-cache');
+      res.setHeader('Expires', '0');
+    }
+  }
+}));
 
 // Explicit page routes
 app.get(['/', '/index', '/index.html'], (req, res) => {

@@ -31,7 +31,7 @@ const DEFAULT_SETTINGS = {
   voiceUrl: '',
   showVoiceNote: true,
   voiceTitle: 'A Special Voice Message from the Heart 💖',
-  adminPassword: 'birthday123',
+  adminPassword: '01905',
 };
 
 function loadSettings() {
@@ -729,10 +729,96 @@ function showToast(message, type = 'success') {
   });
 })();
 
+// ===== 🔐 ADMIN VIP PASSCODE AUTHENTICATION (01905) =====
+(function initAdminAuth() {
+  const authOverlay = document.getElementById('adminAuthOverlay');
+  const adminPanel = document.getElementById('adminPanel');
+  const authForm = document.getElementById('authForm');
+  const passcodeInput = document.getElementById('adminPasscodeInput');
+  const authError = document.getElementById('authError');
+  const btnTogglePwd = document.getElementById('btnTogglePwd');
+  const authCard = document.getElementById('authCard');
+  const btnLogout = document.getElementById('btnLogout');
+  const btnLogoutSidebar = document.getElementById('btnLogoutSidebar');
+
+  function checkAuthStatus() {
+    const isAuthed = sessionStorage.getItem('adminAuth') === 'true';
+    if (isAuthed) {
+      if (authOverlay) authOverlay.style.display = 'none';
+      if (adminPanel) adminPanel.style.display = 'flex';
+      populateForm();
+    } else {
+      if (authOverlay) authOverlay.style.display = 'flex';
+      if (adminPanel) adminPanel.style.display = 'none';
+      if (passcodeInput) {
+        passcodeInput.value = '';
+        passcodeInput.focus();
+      }
+    }
+  }
+
+  // Toggle Password Mask
+  btnTogglePwd?.addEventListener('click', () => {
+    if (passcodeInput) {
+      const isPwd = passcodeInput.type === 'password';
+      passcodeInput.type = isPwd ? 'text' : 'password';
+      btnTogglePwd.textContent = isPwd ? '🙈' : '👁️';
+    }
+  });
+
+  // Handle Form Submit
+  authForm?.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const entered = passcodeInput ? passcodeInput.value.trim() : '';
+    const expected = (S && S.adminPassword) ? S.adminPassword : '01905';
+
+    // Verify Passcode: accepts 01905 or current stored adminPassword
+    if (entered === expected || entered === '01905') {
+      sessionStorage.setItem('adminAuth', 'true');
+      if (authError) authError.textContent = '';
+      if (authOverlay) authOverlay.style.display = 'none';
+      if (adminPanel) adminPanel.style.display = 'flex';
+      populateForm();
+      showToast('👑 Welcome Admin! Passcode Verified.', 'success');
+    } else {
+      if (authError) authError.textContent = '❌ Incorrect Passcode! Please enter 01905';
+      if (passcodeInput) {
+        passcodeInput.value = '';
+        passcodeInput.focus();
+      }
+      // Shake Card Animation
+      if (authCard) {
+        authCard.style.transform = 'translateX(-12px)';
+        setTimeout(() => { authCard.style.transform = 'translateX(12px)'; }, 80);
+        setTimeout(() => { authCard.style.transform = 'translateX(-8px)'; }, 160);
+        setTimeout(() => { authCard.style.transform = 'translateX(8px)'; }, 240);
+        setTimeout(() => { authCard.style.transform = 'translateX(0)'; }, 320);
+      }
+    }
+  });
+
+  // Logout / Lock Action
+  function doLogout() {
+    sessionStorage.removeItem('adminAuth');
+    if (adminPanel) adminPanel.style.display = 'none';
+    if (authOverlay) authOverlay.style.display = 'flex';
+    if (passcodeInput) {
+      passcodeInput.value = '';
+      passcodeInput.focus();
+    }
+    if (authError) authError.textContent = '';
+    showToast('🔒 Admin Panel Locked.', 'info');
+  }
+
+  btnLogout?.addEventListener('click', doLogout);
+  btnLogoutSidebar?.addEventListener('click', doLogout);
+
+  // Check auth on load
+  checkAuthStatus();
+})();
+
 // Initialize
 document.addEventListener('DOMContentLoaded', () => {
-  populateForm();
   fetchServerSettings();
 });
-populateForm();
 fetchServerSettings();

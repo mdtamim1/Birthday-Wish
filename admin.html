@@ -4,14 +4,52 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Admin Panel — Birthday Wish</title>
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+  <meta http-equiv="Pragma" content="no-cache" />
+  <meta http-equiv="Expires" content="0" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="admin.css" />
+  <link rel="stylesheet" href="admin.css?v=3.2" />
 </head>
 <body>
 
+<!-- ===== ADMIN VIP PASSCODE LOCK SCREEN ===== -->
+<div class="gate-overlay" id="adminAuthOverlay">
+  <div class="gate-card" id="authCard">
+    <div class="gate-icon">👑</div>
+    <div class="auth-badge" style="font-size:0.68rem; font-weight:800; letter-spacing:0.2em; color:#fbbf24; text-transform:uppercase; margin-bottom:-4px;">✦ RESTRICTED ACCESS ✦</div>
+    <h2 class="gate-title">Admin Control Panel</h2>
+    <p class="gate-sub">Enter security passcode to unlock management controls</p>
+
+    <form id="authForm" style="display:flex; flex-direction:column; gap:14px; width:100%; margin-top:6px;">
+      <div style="position:relative; width:100%;">
+        <input 
+          type="password" 
+          id="adminPasscodeInput" 
+          class="gate-input" 
+          placeholder="Enter Passcode" 
+          autocomplete="current-password"
+          maxlength="20"
+          required 
+          autofocus 
+          style="width:100%; padding-right:45px; text-align:center; font-size:1.25rem; letter-spacing:0.2em; font-family:monospace; font-weight:700;"
+        />
+        <button type="button" id="btnTogglePwd" style="position:absolute; right:12px; top:50%; transform:translateY(-50%); background:none; border:none; color:rgba(255,255,255,0.6); cursor:pointer; font-size:1.15rem;">👁️</button>
+      </div>
+
+      <button type="submit" class="gate-btn" id="btnSubmitAuth" style="padding:14px; font-size:1rem; font-weight:700; letter-spacing:0.04em;">
+        <span>Unlock Control Panel ➔</span>
+      </button>
+    </form>
+
+    <div class="gate-error" id="authError" style="color:#f87171; font-weight:600; font-size:0.88rem; min-height:1.2em;"></div>
+    <p class="gate-hint">Protected Portal • Passcode Required</p>
+    <a href="index.html" class="gate-back" style="margin-top:4px;">← Back to Birthday Celebration</a>
+  </div>
+</div>
+
 <!-- ===== ADMIN PANEL ===== -->
-<div id="adminPanel" class="admin-panel">
+<div id="adminPanel" class="admin-panel" style="display:none;">
 
   <!-- SIDEBAR -->
   <aside class="sidebar" id="sidebar">
@@ -53,6 +91,7 @@
       <button class="btn-save" id="saveBtn">💾 Save All Changes</button>
       <button class="btn-share" id="shareWishLinkBtn" style="background: linear-gradient(135deg, #da5ec9, #8b5cf6); color: #fff; border: none; padding: 12px 14px; border-radius: 12px; font-weight: 600; cursor: pointer; width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 4px 15px rgba(218, 94, 201, 0.35); font-size: 0.88rem; transition: transform 0.2s;">🔗 Copy Shareable Wish Link</button>
       <button class="btn-reset" id="resetBtn">🔄 Reset to Default</button>
+      <button type="button" class="btn-logout-sidebar" id="btnLogoutSidebar" style="background:rgba(239,68,68,0.12); border:1px solid rgba(239,68,68,0.3); color:#f87171; padding:10px; border-radius:10px; font-weight:600; cursor:pointer; width:100%; margin-top:4px;">🔒 Lock / Logout</button>
     </div>
     <div class="sidebar-preview-links">
       <a href="index.html" target="_blank" class="preview-link">👁 Preview Birthday Page</a>
@@ -70,6 +109,7 @@
       <div class="header-actions">
         <div class="save-status" id="saveStatus"></div>
         <button class="btn-save-top" id="saveBtnTop">💾 Save</button>
+        <button type="button" class="btn-logout" id="btnLogout" style="background:rgba(239,68,68,0.15); border:1px solid rgba(239,68,68,0.4); color:#fca5a5; border-radius:10px; padding:9px 15px; font-weight:600; font-size:0.85rem; cursor:pointer; transition:all 0.2s;">🔒 Lock</button>
         <button class="hamburger" id="hamburger">☰</button>
       </div>
     </div>
@@ -446,6 +486,6 @@
 <!-- Toast notification -->
 <div class="toast" id="toast"></div>
 
-<script src="admin.js"></script>
+<script src="admin.js?v=3.2"></script>
 </body>
 </html>

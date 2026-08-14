@@ -266,10 +266,15 @@ function launchRockets(n, spread) {
 // ===== PHOTO GALLERY SETUP =====
 function setupGallery() {
   const allPhotos = [];
-  if (S.photos && S.photos.length > 0) {
-    S.photos.forEach(p => allPhotos.push(p));
-  }
   if (S.giftPhoto) allPhotos.push(S.giftPhoto);
+  if (S.photos && S.photos.length > 0) {
+    S.photos.forEach(p => {
+      if (p && p !== S.giftPhoto) allPhotos.push(p);
+    });
+  }
+  if (!S.giftPhoto && S.photo && !allPhotos.includes(S.photo)) {
+    allPhotos.push(S.photo);
+  }
 
   const revealGallery = document.getElementById('revealGallery');
   const revealSinglePhoto = document.getElementById('revealSinglePhoto');
@@ -312,8 +317,8 @@ function setupGallery() {
     if (prevBtn) prevBtn.onclick = () => goToSlide(currentSlide-1);
     if (nextBtn) nextBtn.onclick = () => goToSlide(currentSlide+1);
 
-  } else if (allPhotos.length === 1 && revealSinglePhoto) {
-    // Single photo
+  } else if (allPhotos.length >= 1 && revealSinglePhoto) {
+    // Single photo (displays giftPhoto)
     revealSinglePhoto.style.display = 'block';
     const photoEl = document.getElementById('revealPhoto');
     if (photoEl) photoEl.src = allPhotos[0];
@@ -332,7 +337,7 @@ const lightBurst = document.getElementById('lightBurst');
 const clickHint = document.getElementById('clickHint');
 
 // Hover shake
-giftScene.addEventListener('mouseenter', () => {
+giftScene?.addEventListener('mouseenter', () => {
   if (opened) return;
   if (typeof gsap !== 'undefined') {
     gsap.to('#gift3d', { rotateY: 15, duration: 0.15, yoyo: true, repeat: 5,
@@ -340,16 +345,19 @@ giftScene.addEventListener('mouseenter', () => {
   }
 });
 
-giftScene.addEventListener('click', () => {
+function handleGiftOpenClick(e) {
+  if (e) e.stopPropagation();
   if (opened) return;
   opened = true;
-  clickHint.style.pointerEvents = 'none';
-  clickHint.style.opacity = '0';
+  if (clickHint) {
+    clickHint.style.pointerEvents = 'none';
+    clickHint.style.opacity = '0';
+  }
 
   // Get center position for burst
-  const rect = giftScene.getBoundingClientRect();
-  const cx = rect.left + rect.width/2;
-  const cy = rect.top + rect.height/2;
+  const rect = (giftScene || document.body).getBoundingClientRect();
+  const cx = rect.left + rect.width / 2;
+  const cy = rect.top + rect.height / 2;
 
   if (typeof gsap !== 'undefined') {
     // Step 1: Vigorous shake
@@ -363,7 +371,11 @@ giftScene.addEventListener('click', () => {
   } else {
     openGift(cx, cy);
   }
-});
+}
+
+giftScene?.addEventListener('click', handleGiftOpenClick);
+clickHint?.addEventListener('click', handleGiftOpenClick);
+preGift?.addEventListener('click', handleGiftOpenClick);
 
 function openGift(cx, cy) {
   // Pause float animation
