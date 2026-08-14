@@ -96,7 +96,6 @@ function collectFormData() {
   };
 }
 
-// ===== SAVE =====
 function doSave() {
   S = collectFormData();
   saveSettings(S);
@@ -107,6 +106,42 @@ function doSave() {
 
 document.getElementById('saveBtn').addEventListener('click', doSave);
 document.getElementById('saveBtnTop').addEventListener('click', doSave);
+
+// ===== SHAREABLE WISH LINK GENERATOR =====
+function generateShareableLink() {
+  S = collectFormData();
+  saveSettings(S);
+
+  const sharePayload = {
+    name: S.name,
+    birthdate: S.birthdate,
+    specialText: S.specialText,
+    birthdayNote: S.birthdayNote,
+    wisherName: S.wisherName,
+    showWisher: S.showWisher,
+    giftMessage: S.giftMessage,
+    musicUrl: S.musicUrl,
+    themeId: S.themeId,
+    showBirthdate: S.showBirthdate
+  };
+
+  const encoded = btoa(unescape(encodeURIComponent(JSON.stringify(sharePayload))));
+  const baseUrl = window.location.origin + window.location.pathname.replace('admin.html', '').replace('admin', '') + 'index.html';
+  const fullUrl = `${baseUrl}?data=${encoded}`;
+
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(fullUrl).then(() => {
+      showToast('📋 Shareable Wish Link copied to clipboard!', 'success');
+    }).catch(() => {
+      prompt('Copy your customized wish link:', fullUrl);
+    });
+  } else {
+    prompt('Copy your customized wish link:', fullUrl);
+  }
+}
+
+const shareBtn = document.getElementById('shareWishLinkBtn');
+if (shareBtn) shareBtn.addEventListener('click', generateShareableLink);
 
 // Auto-save hint on input
 let autoSaveTimer;

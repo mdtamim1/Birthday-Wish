@@ -15,10 +15,25 @@ const DEFAULT = {
   showWisher: false,
 };
 function loadSettings() {
+  let result = { ...DEFAULT };
   try {
     const s = localStorage.getItem('birthdaySettings');
-    return s ? { ...DEFAULT, ...JSON.parse(s) } : { ...DEFAULT };
-  } catch { return { ...DEFAULT }; }
+    if (s) result = { ...result, ...JSON.parse(s) };
+  } catch (e) {}
+
+  try {
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.has('data')) {
+      const decoded = JSON.parse(decodeURIComponent(escape(atob(urlParams.get('data')))));
+      result = { ...result, ...decoded };
+    } else {
+      if (urlParams.has('name')) result.name = urlParams.get('name');
+      if (urlParams.has('giftMessage')) result.giftMessage = urlParams.get('giftMessage');
+      if (urlParams.has('wisherName')) { result.wisherName = urlParams.get('wisherName'); result.showWisher = true; }
+    }
+  } catch (e) {}
+
+  return result;
 }
 const S = loadSettings();
 

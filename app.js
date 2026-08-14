@@ -137,19 +137,46 @@ const DEFAULT_SETTINGS = {
 };
 
 function loadSettings() {
+  let result = { ...DEFAULT_SETTINGS };
+
+  // 1. Try loading from localStorage
   try {
     const saved = localStorage.getItem('birthdaySettings');
-    if (!saved) return { ...DEFAULT_SETTINGS };
-    const parsed = JSON.parse(saved);
-    return { 
-      ...DEFAULT_SETTINGS, 
-      ...parsed,
-      themeId: parsed.themeId || 'galaxy-violet',
-      photos: (parsed.photos && parsed.photos.length > 0) ? parsed.photos : DEFAULT_SETTINGS.photos
-    };
-  } catch {
-    return { ...DEFAULT_SETTINGS };
-  }
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      result = { ...result, ...parsed };
+    }
+  } catch (e) {}
+
+  // 2. Check for URL Parameters (Shareable Link)
+  try {
+    const urlParams = new URLSearchParams(window.location.search);
+    let fromUrl = false;
+
+    if (urlParams.has('data')) {
+      const decoded = JSON.parse(decodeURIComponent(escape(atob(urlParams.get('data')))));
+      result = { ...result, ...decoded };
+      fromUrl = true;
+    } else {
+      if (urlParams.has('name')) { result.name = urlParams.get('name'); fromUrl = true; }
+      if (urlParams.has('birthdate')) { result.birthdate = urlParams.get('birthdate'); fromUrl = true; }
+      if (urlParams.has('specialText')) { result.specialText = urlParams.get('specialText'); fromUrl = true; }
+      if (urlParams.has('birthdayNote')) { result.birthdayNote = urlParams.get('birthdayNote'); fromUrl = true; }
+      if (urlParams.has('wisherName')) { result.wisherName = urlParams.get('wisherName'); result.showWisher = true; fromUrl = true; }
+      if (urlParams.has('theme')) { result.themeId = urlParams.get('theme'); fromUrl = true; }
+      if (urlParams.has('giftMessage')) { result.giftMessage = urlParams.get('giftMessage'); fromUrl = true; }
+    }
+
+    if (fromUrl) {
+      try {
+        localStorage.setItem('birthdaySettings', JSON.stringify(result));
+      } catch (e) {}
+    }
+  } catch (e) {}
+
+  result.themeId = result.themeId || 'galaxy-violet';
+  result.photos = (result.photos && result.photos.length > 0) ? result.photos : DEFAULT_SETTINGS.photos;
+  return result;
 }
 
 let S = loadSettings();
