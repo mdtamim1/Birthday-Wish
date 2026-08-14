@@ -3,10 +3,22 @@
   "version": "1.0.0",
   "description": "Premium 3D Birthday Wish Website with Admin Panel and 3D Gift Box Animation",
   "scripts": {
-    "dev": "npx -y serve -l 3000 .",
-    "start": "npx -y serve -l 3000 ."
+    "dev": "node server.js",
+    "start": "node server.js"
   },
-  "keywords": ["birthday", "3d", "threejs", "gsap", "animation"],
+  "keywords": [
+    "birthday",
+    "3d",
+    "threejs",
+    "gsap",
+    "animation"
+  ],
   "author": "",
-  "license": "MIT"
+  "license": "MIT",
+  "dependencies": {
+    "better-sqlite3": "^13.0.3",
+    "cors": "^2.8.6",
+    "express": "^5.2.1",
+    "multer": "^2.2.0"
+  }
 }

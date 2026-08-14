@@ -2062,3 +2062,49 @@ html, body {
     padding: 8px 12px;
   }
 }
+
+/* ===== REAL-TIME LIVE SYNC TOAST NOTIFICATION ===== */
+.live-sync-toast {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  background: rgba(15, 10, 25, 0.85);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 999px;
+  padding: 10px 20px;
+  color: #fff;
+  font-family: var(--font-sans);
+  font-size: 0.86rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6), 0 0 20px var(--theme-glow, rgba(218, 94, 201, 0.4));
+  z-index: 999999;
+  transform: translateY(100px);
+  opacity: 0;
+  transition: all 0.45s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  pointer-events: none;
+}
+
+.live-sync-toast.show {
+  transform: translateY(0);
+  opacity: 1;
+}
+
+.live-sync-indicator {
+  width: 9px;
+  height: 9px;
+  background: #10b981;
+  border-radius: 50%;
+  box-shadow: 0 0 10px #10b981;
+  animation: pulseLiveDot 1.5s infinite;
+}
+
+@keyframes pulseLiveDot {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.4); opacity: 0.7; }
+}
+

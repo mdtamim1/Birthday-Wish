@@ -182,6 +182,65 @@ function loadSettings() {
 let S = loadSettings();
 let currentTheme = THEMES[S.themeId] || THEMES['galaxy-violet'];
 
+// ===== AUDIO & MUSIC CONTROLS (Top-Level Declaration to prevent TDZ) =====
+let bgMusic = null;
+let musicPill = null;
+let musicToggle = null;
+let musicIcon = null;
+let eqBars = null;
+let isMusicPlaying = false;
+
+function initMusicElements() {
+  if (!bgMusic) bgMusic = document.getElementById('bgMusic');
+  if (!musicPill) musicPill = document.getElementById('musicPill');
+  if (!musicToggle) musicToggle = document.getElementById('musicToggle');
+  if (!musicIcon) musicIcon = document.getElementById('musicIcon');
+  if (!eqBars) eqBars = document.getElementById('equalizerBars');
+  if (bgMusic && S.musicUrl && !bgMusic.src) {
+    bgMusic.src = S.musicUrl;
+  }
+}
+
+function toggleMusic() {
+  initMusicElements();
+  if (!bgMusic) return;
+  if (isMusicPlaying) {
+    bgMusic.pause();
+    isMusicPlaying = false;
+    if (musicIcon) musicIcon.textContent = '🔇';
+    if (eqBars) eqBars.classList.remove('playing');
+  } else {
+    bgMusic.play().then(() => {
+      isMusicPlaying = true;
+      if (musicIcon) musicIcon.textContent = '🎵';
+      if (eqBars) eqBars.classList.add('playing');
+    }).catch(() => {});
+  }
+}
+
+function setupMusicListeners() {
+  initMusicElements();
+  if (musicPill) musicPill.onclick = toggleMusic;
+  if (musicToggle) musicToggle.onclick = (e) => { e.stopPropagation(); toggleMusic(); };
+
+  document.addEventListener('click', function autoMusicStarter() {
+    initMusicElements();
+    if (S.musicEnabled && !isMusicPlaying && bgMusic && bgMusic.src) {
+      bgMusic.play().then(() => {
+        isMusicPlaying = true;
+        if (musicIcon) musicIcon.textContent = '🎵';
+        if (eqBars) eqBars.classList.add('playing');
+      }).catch(() => {});
+    }
+    document.removeEventListener('click', autoMusicStarter);
+  }, { once: true });
+}
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', setupMusicListeners);
+} else {
+  setupMusicListeners();
+}
+
 // ===== SYNTHETIC AUDIO ENGINE =====
 class SoundFX {
   constructor() { this.ctx = null; }
@@ -1038,53 +1097,153 @@ if (btnReplayIntro) {
   });
 }
 
-// ===== POPULATE DOM CONTENT =====
-document.getElementById('birthdayName').textContent = S.name;
-const introForName = document.getElementById('introForName');
-if (introForName) introForName.textContent = `For ${S.name} 👑`;
-
-if (S.birthdate && S.showBirthdate) {
-  const bd = new Date(S.birthdate);
-  const options = { year: 'numeric', month: 'long', day: 'numeric' };
-  document.getElementById('birthdateDisplay').textContent = bd.toLocaleDateString('en-US', options);
-  document.getElementById('birthdateWrapper').style.display = 'inline-flex';
-} else {
-  document.getElementById('birthdateWrapper').style.display = 'none';
-}
-
-document.getElementById('specialText').textContent = S.specialText;
-
-if (S.showWisher && S.wisherName) {
-  document.getElementById('wisherSection').style.display = 'block';
-  document.getElementById('wisherName').textContent = S.wisherName;
-}
-
 // ===== TYPEWRITER NOTE EFFECT =====
+let activeTypewriterInterval = null;
 function typeText(element, text, speed = 26) {
+  if (activeTypewriterInterval) {
+    clearInterval(activeTypewriterInterval);
+    activeTypewriterInterval = null;
+  }
   return new Promise((resolve) => {
     let index = 0;
     element.textContent = '';
-    const interval = setInterval(() => {
+    if (!text) { resolve(); return; }
+    activeTypewriterInterval = setInterval(() => {
       if (index < text.length) {
         element.textContent += text.charAt(index);
         index++;
       } else {
-        clearInterval(interval);
+        clearInterval(activeTypewriterInterval);
+        activeTypewriterInterval = null;
         resolve();
       }
     }, speed);
   });
 }
 
-const noteEl = document.getElementById('noteText');
-const cursorEl = document.getElementById('typingCursor');
-if (noteEl) {
-  setTimeout(() => {
-    typeText(noteEl, S.birthdayNote, 24).then(() => {
-      if (cursorEl) { cursorEl.style.animation = 'none'; cursorEl.style.opacity = '0'; }
-    });
-  }, 1000);
+// ===== REAL-TIME LIVE SYNC TOAST NOTIFICATION =====
+function showLiveToast(text) {
+  let toast = document.getElementById('liveSyncToast');
+  if (!toast) {
+    toast = document.createElement('div');
+    toast.id = 'liveSyncToast';
+    toast.className = 'live-sync-toast';
+    toast.innerHTML = '<span class="live-sync-indicator"></span><span id="liveSyncText"></span>';
+    document.body.appendChild(toast);
+  }
+  const textEl = document.getElementById('liveSyncText');
+  if (textEl) textEl.textContent = text;
+  toast.classList.add('show');
+  clearTimeout(toast._timer);
+  toast._timer = setTimeout(() => {
+    toast.classList.remove('show');
+  }, 3500);
 }
+
+// ===== DYNAMIC LIVE UPDATE DISPATCHER =====
+let isFirstLiveRun = true;
+function applyLiveUpdate(newSettings, isInitial = false) {
+  if (!newSettings || typeof newSettings !== 'object') return;
+  const prevName = S.name;
+  const prevTheme = S.themeId;
+
+  S = { ...DEFAULT_SETTINGS, ...S, ...newSettings };
+  try {
+    localStorage.setItem('birthdaySettings', JSON.stringify(S));
+  } catch (e) {}
+
+  // 1. Recipient Name
+  const bdayNameEl = document.getElementById('birthdayName');
+  if (bdayNameEl) bdayNameEl.textContent = S.name || 'Your Name';
+  const introForNameEl = document.getElementById('introForName');
+  if (introForNameEl) introForNameEl.textContent = `For ${S.name || 'Someone Very Special'} 👑`;
+
+  // 2. Birthdate
+  const bdWrapper = document.getElementById('birthdateWrapper');
+  const bdDisplay = document.getElementById('birthdateDisplay');
+  if (bdWrapper && bdDisplay) {
+    if (S.birthdate && S.showBirthdate !== false) {
+      try {
+        const bd = new Date(S.birthdate);
+        const options = { year: 'numeric', month: 'long', day: 'numeric' };
+        bdDisplay.textContent = bd.toLocaleDateString('en-US', options);
+        bdWrapper.style.display = 'inline-flex';
+      } catch (e) {
+        bdWrapper.style.display = 'none';
+      }
+    } else {
+      bdWrapper.style.display = 'none';
+    }
+  }
+
+  // 3. Special Subtitle Text
+  const specialTextEl = document.getElementById('specialText');
+  if (specialTextEl) specialTextEl.textContent = S.specialText || '';
+
+  // 4. Wisher Section
+  const wisherSec = document.getElementById('wisherSection');
+  const wisherNameEl = document.getElementById('wisherName');
+  if (wisherSec && wisherNameEl) {
+    if (S.showWisher && S.wisherName) {
+      wisherSec.style.display = 'block';
+      wisherNameEl.textContent = S.wisherName;
+    } else {
+      wisherSec.style.display = 'none';
+    }
+  }
+
+  // 5. Birthday Note (Typewriter)
+  const noteEl = document.getElementById('noteText');
+  const cursorEl = document.getElementById('typingCursor');
+  if (noteEl) {
+    if (isInitial || isFirstLiveRun) {
+      setTimeout(() => {
+        typeText(noteEl, S.birthdayNote || '', 24).then(() => {
+          if (cursorEl) { cursorEl.style.animation = 'none'; cursorEl.style.opacity = '0'; }
+        });
+      }, 1000);
+    } else {
+      typeText(noteEl, S.birthdayNote || '', 18).then(() => {
+        if (cursorEl) { cursorEl.style.animation = 'none'; cursorEl.style.opacity = '0'; }
+      });
+    }
+  }
+
+  // 6. Gift Message
+  const giftMsgEl = document.getElementById('giftMessage');
+  if (giftMsgEl) giftMsgEl.textContent = S.giftMessage || DEFAULT_SETTINGS.giftMessage;
+
+  // 7. Theme
+  if (S.themeId) {
+    applyTheme(S.themeId);
+  }
+  const root = document.documentElement;
+  if (S.themeColor1) root.style.setProperty('--theme-primary', S.themeColor1);
+  if (S.themeColor2) root.style.setProperty('--theme-secondary', S.themeColor2);
+  if (S.themeAccent) root.style.setProperty('--theme-accent', S.themeAccent);
+
+  // 8. Photos & Galleries
+  if (typeof window.setupOrbitCards === 'function') window.setupOrbitCards();
+  if (typeof window.setupMemoriesReel === 'function') window.setupMemoriesReel();
+
+  // 9. Music URL
+  if (typeof bgMusic !== 'undefined' && bgMusic && S.musicUrl && bgMusic.src !== S.musicUrl) {
+    const wasPlaying = typeof isMusicPlaying !== 'undefined' && isMusicPlaying;
+    bgMusic.src = S.musicUrl;
+    if (wasPlaying && S.musicEnabled) {
+      bgMusic.play().catch(() => {});
+    }
+  }
+
+  // 10. Live sync toast feedback
+  if (!isInitial && !isFirstLiveRun) {
+    showLiveToast(`⚡ Live Updated: "${S.name}"`);
+  }
+  isFirstLiveRun = false;
+}
+
+// Initial populate
+applyLiveUpdate(S, true);
 
 // ===== CONFETTI LAUNCHER =====
 function launchConfetti(count = 70) {
@@ -1240,7 +1399,7 @@ if (giftOpenBtn) {
 }
 
 // ===== POPULATE ORBIT PHOTO CARDS (Scene 2 Cake) =====
-(function setupOrbitCards() {
+function setupOrbitCards() {
   const orbitCards = document.querySelectorAll('#orbitRing3D .orbit-card');
   if (!orbitCards.length) return;
 
@@ -1252,6 +1411,7 @@ if (giftOpenBtn) {
     const src = photosList[idx % photosList.length];
     if (src && img) {
       img.src = src;
+      img.style.display = 'block';
       img.alt = `Memory ${idx + 1}`;
       if (placeholder) placeholder.style.display = 'none';
     } else {
@@ -1259,16 +1419,19 @@ if (giftOpenBtn) {
       if (placeholder) placeholder.style.display = 'flex';
     }
   });
-})();
+}
+window.setupOrbitCards = setupOrbitCards;
+setupOrbitCards();
 
 // Populate Precious Memories Reel
-(function setupMemoriesReel() {
+function setupMemoriesReel() {
   const track = document.getElementById('memoriesReelTrack');
   if (!track) return;
 
   const photosList = (S.photos && S.photos.length > 0) ? S.photos : DEFAULT_SETTINGS.photos;
   if (!photosList || photosList.length === 0) return;
 
+  track.innerHTML = '';
   const captions = [
     'Radiant Smile ✨', 'Precious Moments 💕', 'Forever Shining 🌟',
     'Best Memory 💖', 'Pure Joy 🌸', 'Special Day 🎉',
@@ -1289,7 +1452,9 @@ if (giftOpenBtn) {
     card.addEventListener('click', () => openLightbox(src, cap));
     track.appendChild(card);
   });
-})();
+}
+window.setupMemoriesReel = setupMemoriesReel;
+setupMemoriesReel();
 
 // Quick Gallery Navigation Button
 document.getElementById('memoriesQuickBtn')?.addEventListener('click', () => {
@@ -1317,44 +1482,68 @@ function closeLightbox() {
 if (lightboxClose) lightboxClose.addEventListener('click', closeLightbox);
 if (lightboxBackdrop) lightboxBackdrop.addEventListener('click', closeLightbox);
 
-// ===== BACKGROUND MUSIC CONTROLLER =====
-const bgMusic = document.getElementById('bgMusic');
-const musicPill = document.getElementById('musicPill');
-const musicToggle = document.getElementById('musicToggle');
-const musicIcon = document.getElementById('musicIcon');
-const eqBars = document.getElementById('equalizerBars');
-let isMusicPlaying = false;
 
-if (S.musicUrl) bgMusic.src = S.musicUrl;
+// ===== REAL-TIME SERVER-SENT EVENTS (SSE) & STORAGE SYNC =====
+function initRealtimeSync() {
+  // 1. Initial REST API Fetch
+  fetch('/api/settings')
+    .then(res => res.json())
+    .then(json => {
+      if (json.success && json.data) {
+        applyLiveUpdate(json.data, true);
+      }
+    })
+    .catch(err => console.log('Offline/Standalone mode:', err));
 
-function toggleMusic() {
-  if (isMusicPlaying) {
-    bgMusic.pause();
-    isMusicPlaying = false;
-    musicIcon.textContent = '🔇';
-    eqBars.classList.remove('playing');
-  } else {
-    bgMusic.play().then(() => {
-      isMusicPlaying = true;
-      musicIcon.textContent = '🎵';
-      eqBars.classList.add('playing');
-    }).catch(() => {});
+  // 2. Cross-tab LocalStorage Sync
+  window.addEventListener('storage', (e) => {
+    if (e.key === 'birthdaySettings' && e.newValue) {
+      try {
+        const updated = JSON.parse(e.newValue);
+        applyLiveUpdate(updated, false);
+      } catch (err) {}
+    }
+  });
+
+  // 3. Server-Sent Events (SSE) Live Stream
+  let sseSource = null;
+  let reconnectTimer = null;
+
+  function connectSSE() {
+    if (typeof EventSource === 'undefined') return;
+    try {
+      if (sseSource) sseSource.close();
+      sseSource = new EventSource('/api/events');
+
+      sseSource.addEventListener('initial', (e) => {
+        try {
+          const data = JSON.parse(e.data);
+          applyLiveUpdate(data, true);
+        } catch (err) {}
+      });
+
+      sseSource.addEventListener('settings_updated', (e) => {
+        try {
+          const data = JSON.parse(e.data);
+          applyLiveUpdate(data, false);
+        } catch (err) {}
+      });
+
+      sseSource.onerror = () => {
+        sseSource.close();
+        clearTimeout(reconnectTimer);
+        reconnectTimer = setTimeout(connectSSE, 3500);
+      };
+    } catch (e) {
+      clearTimeout(reconnectTimer);
+      reconnectTimer = setTimeout(connectSSE, 4000);
+    }
   }
+
+  connectSSE();
 }
 
-if (musicPill) musicPill.addEventListener('click', toggleMusic);
-if (musicToggle) musicToggle.addEventListener('click', (e) => { e.stopPropagation(); toggleMusic(); });
-
-document.addEventListener('click', function autoMusicStarter() {
-  if (S.musicEnabled && !isMusicPlaying && bgMusic.src) {
-    bgMusic.play().then(() => {
-      isMusicPlaying = true;
-      musicIcon.textContent = '🎵';
-      eqBars.classList.add('playing');
-    }).catch(() => {});
-  }
-  document.removeEventListener('click', autoMusicStarter);
-}, { once: true });
+initRealtimeSync();
 
 // Initialize Three Scene on DOM Ready
 if (document.readyState === 'complete' || document.readyState === 'interactive') {

@@ -35,21 +35,68 @@ function loadSettings() {
 
   return result;
 }
-const S = loadSettings();
+let S = loadSettings();
 
-// Apply theme
-const root = document.documentElement;
-root.style.setProperty('--p', S.themeColor1);
-root.style.setProperty('--s', S.themeColor2);
-root.style.setProperty('--a', S.themeAccent);
+function applyGiftLiveUpdate(newSettings) {
+  if (!newSettings || typeof newSettings !== 'object') return;
+  S = { ...DEFAULT, ...S, ...newSettings };
 
-// ===== POPULATE CONTENT =====
-document.getElementById('revealMessage').textContent = S.giftMessage;
-const fromLine = S.showWisher && S.wisherName ? `— with love from ${S.wisherName} 💕` : `— ${S.name}`;
-document.getElementById('revealFrom').textContent = fromLine;
+  // Apply theme
+  const root = document.documentElement;
+  root.style.setProperty('--p', S.themeColor1 || '#da5ec9');
+  root.style.setProperty('--s', S.themeColor2 || '#ec4899');
+  root.style.setProperty('--a', S.themeAccent || '#fd8ae0');
 
-// Heading name
-document.getElementById('preHeading').textContent = `${S.name}'s Gift`;
+  // Populate content
+  const msgEl = document.getElementById('revealMessage');
+  if (msgEl) msgEl.textContent = S.giftMessage || DEFAULT.giftMessage;
+
+  const fromLine = S.showWisher && S.wisherName ? `— with love from ${S.wisherName} 💕` : `— ${S.name || 'Your Name'}`;
+  const fromEl = document.getElementById('revealFrom');
+  if (fromEl) fromEl.textContent = fromLine;
+
+  const headingEl = document.getElementById('preHeading');
+  if (headingEl) headingEl.textContent = `${S.name || 'Your Name'}'s Gift`;
+
+  if (typeof setupGallery === 'function') {
+    setupGallery();
+  }
+}
+
+applyGiftLiveUpdate(S);
+
+// Real-time live sync for Gift page
+function initGiftRealtime() {
+  fetch('/api/settings')
+    .then(r => r.json())
+    .then(json => {
+      if (json.success && json.data) applyGiftLiveUpdate(json.data);
+    })
+    .catch(() => {});
+
+  window.addEventListener('storage', (e) => {
+    if (e.key === 'birthdaySettings' && e.newValue) {
+      try { applyGiftLiveUpdate(JSON.parse(e.newValue)); } catch (err) {}
+    }
+  });
+
+  if (typeof EventSource !== 'undefined') {
+    let es;
+    function connect() {
+      if (es) es.close();
+      es = new EventSource('/api/events');
+      es.addEventListener('settings_updated', (e) => {
+        try { applyGiftLiveUpdate(JSON.parse(e.data)); } catch (err) {}
+      });
+      es.onerror = () => {
+        es.close();
+        setTimeout(connect, 4000);
+      };
+    }
+    connect();
+  }
+}
+initGiftRealtime();
 
 // ===== FLOATING PARTICLES =====
 const giftParticles = document.getElementById('giftParticles');
@@ -217,18 +264,26 @@ function launchRockets(n, spread) {
 }
 
 // ===== PHOTO GALLERY SETUP =====
-const allPhotos = [];
-if (S.photos && S.photos.length > 0) {
-  S.photos.forEach(p => allPhotos.push(p));
-}
-if (S.giftPhoto) allPhotos.push(S.giftPhoto);
-
 function setupGallery() {
-  if (allPhotos.length > 1) {
+  const allPhotos = [];
+  if (S.photos && S.photos.length > 0) {
+    S.photos.forEach(p => allPhotos.push(p));
+  }
+  if (S.giftPhoto) allPhotos.push(S.giftPhoto);
+
+  const revealGallery = document.getElementById('revealGallery');
+  const revealSinglePhoto = document.getElementById('revealSinglePhoto');
+  const track = document.getElementById('galleryTrack');
+  const dotsEl = document.getElementById('galleryDots');
+
+  if (revealGallery) revealGallery.style.display = 'none';
+  if (revealSinglePhoto) revealSinglePhoto.style.display = 'none';
+  if (track) track.innerHTML = '';
+  if (dotsEl) dotsEl.innerHTML = '';
+
+  if (allPhotos.length > 1 && revealGallery && track && dotsEl) {
     // Multi-photo gallery
-    document.getElementById('revealGallery').style.display = 'block';
-    const track = document.getElementById('galleryTrack');
-    const dotsEl = document.getElementById('galleryDots');
+    revealGallery.style.display = 'block';
     let currentSlide = 0;
 
     allPhotos.forEach((src, i) => {
@@ -252,29 +307,16 @@ function setupGallery() {
       document.querySelectorAll('.gallery-dot').forEach((d,i) => d.classList.toggle('active', i===currentSlide));
     }
 
-    document.getElementById('galleryPrev').addEventListener('click', () => goToSlide(currentSlide-1));
-    document.getElementById('galleryNext').addEventListener('click', () => goToSlide(currentSlide+1));
+    const prevBtn = document.getElementById('galleryPrev');
+    const nextBtn = document.getElementById('galleryNext');
+    if (prevBtn) prevBtn.onclick = () => goToSlide(currentSlide-1);
+    if (nextBtn) nextBtn.onclick = () => goToSlide(currentSlide+1);
 
-    // Auto-advance
-    let galleryTimer = setInterval(() => goToSlide(currentSlide+1), 4000);
-    document.getElementById('revealGallery').addEventListener('mouseenter', () => clearInterval(galleryTimer));
-    document.getElementById('revealGallery').addEventListener('mouseleave', () => {
-      galleryTimer = setInterval(() => goToSlide(currentSlide+1), 4000);
-    });
-
-    // Touch swipe
-    let touchStartX = 0;
-    document.getElementById('revealGallery').addEventListener('touchstart', e => { touchStartX = e.touches[0].clientX; });
-    document.getElementById('revealGallery').addEventListener('touchend', e => {
-      const diff = touchStartX - e.changedTouches[0].clientX;
-      if (Math.abs(diff) > 40) goToSlide(diff > 0 ? currentSlide+1 : currentSlide-1);
-    });
-
-  } else if (allPhotos.length === 1) {
+  } else if (allPhotos.length === 1 && revealSinglePhoto) {
     // Single photo
-    const wrap = document.getElementById('revealSinglePhoto');
-    wrap.style.display = 'block';
-    document.getElementById('revealPhoto').src = allPhotos[0];
+    revealSinglePhoto.style.display = 'block';
+    const photoEl = document.getElementById('revealPhoto');
+    if (photoEl) photoEl.src = allPhotos[0];
   }
 }
 setupGallery();
