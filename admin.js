@@ -39,32 +39,9 @@ function saveSettings(data) {
 
 let S = loadSettings();
 
-// ===== PASSWORD GATE =====
-const passwordGate = document.getElementById('passwordGate');
-const adminPanel = document.getElementById('adminPanel');
-const passwordInput = document.getElementById('passwordInput');
-const passwordSubmit = document.getElementById('passwordSubmit');
-const gateError = document.getElementById('gateError');
-
-function checkPassword() {
-  const val = passwordInput.value.trim();
-  if (val === S.adminPassword) {
-    passwordGate.style.transition = 'opacity 0.5s';
-    passwordGate.style.opacity = '0';
-    setTimeout(() => {
-      passwordGate.style.display = 'none';
-      adminPanel.style.display = 'flex';
-      populateForm();
-    }, 500);
-  } else {
-    gateError.textContent = '❌ Incorrect password. Try again.';
-    passwordInput.classList.add('shake');
-    setTimeout(() => { passwordInput.classList.remove('shake'); gateError.textContent = ''; }, 2000);
-  }
-}
-
-passwordSubmit.addEventListener('click', checkPassword);
-passwordInput.addEventListener('keydown', e => { if (e.key === 'Enter') checkPassword(); });
+// ===== INITIALIZE ADMIN PANEL DIRECTLY =====
+document.addEventListener('DOMContentLoaded', populateForm);
+populateForm();
 
 // ===== POPULATE FORM =====
 function populateForm() {
@@ -265,30 +242,6 @@ document.querySelectorAll('.preset-btn').forEach(btn => {
   });
 });
 
-// ===== PASSWORD CHANGE =====
-document.getElementById('changePwBtn').addEventListener('click', () => {
-  const current = document.getElementById('currentPwInput').value;
-  const newPw = document.getElementById('newPwInput').value;
-  const confirm = document.getElementById('confirmPwInput').value;
-  const feedback = document.getElementById('pwFeedback');
-
-  if (current !== S.adminPassword) {
-    feedback.textContent = '❌ Current password is incorrect'; feedback.className = 'pw-feedback error'; return;
-  }
-  if (newPw.length < 6) {
-    feedback.textContent = '❌ New password must be at least 6 characters'; feedback.className = 'pw-feedback error'; return;
-  }
-  if (newPw !== confirm) {
-    feedback.textContent = '❌ Passwords do not match'; feedback.className = 'pw-feedback error'; return;
-  }
-  S.adminPassword = newPw;
-  saveSettings(S);
-  feedback.textContent = '✅ Password changed successfully!'; feedback.className = 'pw-feedback success';
-  document.getElementById('currentPwInput').value = '';
-  document.getElementById('newPwInput').value = '';
-  document.getElementById('confirmPwInput').value = '';
-  setTimeout(() => { feedback.textContent = ''; }, 4000);
-});
 
 // ===== SIDEBAR NAV (scroll highlight + mobile) =====
 const hamburger = document.getElementById('hamburger');

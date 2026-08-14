@@ -10,24 +10,8 @@
 </head>
 <body>
 
-<!-- ===== PASSWORD GATE ===== -->
-<div id="passwordGate" class="gate-overlay">
-  <div class="gate-card">
-    <div class="gate-icon">🔐</div>
-    <h2 class="gate-title">Admin Panel</h2>
-    <p class="gate-sub">Enter password to continue</p>
-    <div class="gate-input-wrap">
-      <input type="password" id="passwordInput" class="gate-input" placeholder="Password" autocomplete="off" />
-      <button class="gate-btn" id="passwordSubmit">Unlock →</button>
-    </div>
-    <p class="gate-error" id="gateError"></p>
-    <p class="gate-hint">Default password: <code>birthday123</code></p>
-    <a href="index.html" class="gate-back">← Go back to Birthday Page</a>
-  </div>
-</div>
-
 <!-- ===== ADMIN PANEL ===== -->
-<div id="adminPanel" class="admin-panel" style="display:none;">
+<div id="adminPanel" class="admin-panel">
 
   <!-- SIDEBAR -->
   <aside class="sidebar" id="sidebar">
@@ -63,10 +47,6 @@
       <a href="#section-visibility" class="nav-item" data-section="visibility">
         <span class="nav-icon">👁️</span>
         <span>Visibility</span>
-      </a>
-      <a href="#section-security" class="nav-item" data-section="security">
-        <span class="nav-icon">🔐</span>
-        <span>Security</span>
       </a>
     </nav>
     <div class="sidebar-actions">
@@ -391,32 +371,6 @@
           </label>
         </div>
       </div>
-    </section>
-
-    <!-- === SECURITY === -->
-    <section class="admin-section" id="section-security">
-      <div class="section-header">
-        <span class="section-icon">🔐</span>
-        <div>
-          <h2 class="section-title">Security</h2>
-          <p class="section-desc">Change the admin panel password</p>
-        </div>
-      </div>
-
-      <div class="form-group">
-        <label class="form-label">Current Password</label>
-        <input type="password" id="currentPwInput" class="form-input" placeholder="Enter current password" />
-      </div>
-      <div class="form-group">
-        <label class="form-label">New Password</label>
-        <input type="password" id="newPwInput" class="form-input" placeholder="Enter new password (min 6 chars)" />
-      </div>
-      <div class="form-group">
-        <label class="form-label">Confirm New Password</label>
-        <input type="password" id="confirmPwInput" class="form-input" placeholder="Confirm new password" />
-      </div>
-      <button class="btn-change-pw" id="changePwBtn">🔑 Change Password</button>
-      <p class="pw-feedback" id="pwFeedback"></p>
     </section>
 
   </main>
