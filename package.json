@@ -1,0 +1,12 @@
+{
+  "name": "birthday-wish",
+  "version": "1.0.0",
+  "description": "Premium 3D Birthday Wish Website with Admin Panel and 3D Gift Box Animation",
+  "scripts": {
+    "dev": "npx -y serve -l 3000 .",
+    "start": "npx -y serve -l 3000 ."
+  },
+  "keywords": ["birthday", "3d", "threejs", "gsap", "animation"],
+  "author": "",
+  "license": "MIT"
+}

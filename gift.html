@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Open Your Gift 🎁</title>
+  <meta name="description" content="A special gift just for you — unwrap it with love." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700;900&family=Great+Vibes&family=Playfair+Display:ital,wght@0,600;0,700;0,900;1,400&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="gift.css" />
+</head>
+<body>
+
+<canvas id="bgCanvas"></canvas>
+<canvas id="confettiCanvas"></canvas>
+<canvas id="fireworkCanvas"></canvas>
+
+<!-- Floating particles -->
+<div id="giftParticles"></div>
+
+<!-- Back button -->
+<a href="index.html" class="back-btn" id="backBtn">← Back</a>
+<a href="admin.html" class="admin-link">⚙️</a>
+
+<div class="gift-page-wrapper" id="pageWrapper">
+
+  <!-- ========= PRE-OPEN STATE ========= -->
+  <div class="pre-gift" id="preGift">
+
+    <div class="pre-title-wrap">
+      <p class="pre-label">✨ Something Special Awaits</p>
+      <h1 class="pre-heading" id="preHeading">Your Gift Is Ready</h1>
+      <p class="pre-sub" id="preSub">A surprise crafted with love, just for you...</p>
+    </div>
+
+    <!-- 3D GIFT BOX using canvas for better control -->
+    <div class="gift-scene-wrap">
+      <div class="gift-scene" id="giftScene">
+        <!-- 3D Perspective Container -->
+        <div class="gift-3d-container" id="gift3d">
+
+          <!-- BOX BODY -->
+          <div class="box-body">
+            <div class="box-face box-front">
+              <div class="face-ribbon-v"></div>
+              <div class="face-ribbon-h"></div>
+              <div class="box-dots">
+                <span></span><span></span><span></span><span></span>
+              </div>
+              <div class="face-shine"></div>
+            </div>
+            <div class="box-face box-back"></div>
+            <div class="box-face box-left">
+              <div class="side-ribbon"></div>
+            </div>
+            <div class="box-face box-right">
+              <div class="side-ribbon"></div>
+            </div>
+            <div class="box-face box-bottom"></div>
+          </div>
+
+          <!-- LID -->
+          <div class="box-lid-wrap" id="lidWrap">
+            <div class="box-lid">
+              <div class="lid-face lid-top">
+                <div class="lid-ribbon-v"></div>
+                <div class="lid-ribbon-h"></div>
+                <!-- BOW on top -->
+                <div class="bow3d" id="bow3d">
+                  <div class="bow-loop bow-loop-l"></div>
+                  <div class="bow-loop bow-loop-r"></div>
+                  <div class="bow-knot"></div>
+                  <div class="bow-tail bow-tail-l"></div>
+                  <div class="bow-tail bow-tail-r"></div>
+                </div>
+                <div class="lid-shine"></div>
+              </div>
+              <div class="lid-face lid-front-strip"></div>
+              <div class="lid-face lid-left-strip"></div>
+              <div class="lid-face lid-right-strip"></div>
+              <div class="lid-face lid-back-strip"></div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Orbiting stars -->
+        <div class="orbit-stars" id="orbitStars">
+          <span class="ostar s1">✨</span>
+          <span class="ostar s2">⭐</span>
+          <span class="ostar s3">🌟</span>
+          <span class="ostar s4">💫</span>
+          <span class="ostar s5">✨</span>
+          <span class="ostar s6">🎊</span>
+          <span class="ostar s7">💕</span>
+          <span class="ostar s8">⭐</span>
+        </div>
+
+        <!-- Ground reflection -->
+        <div class="gift-shadow"></div>
+      </div>
+    </div>
+
+    <div class="click-hint" id="clickHint">
+      <div class="hint-ring"></div>
+      <span class="hint-text">✨ Tap the gift to open!</span>
+    </div>
+  </div>
+
+  <!-- ========= POST-OPEN STATE ========= -->
+  <div class="post-gift" id="postGift">
+
+    <!-- Light burst overlay -->
+    <div class="light-burst" id="lightBurst"></div>
+
+    <div class="reveal-container">
+
+      <!-- Photo gallery (multiple photos) -->
+      <div class="reveal-gallery" id="revealGallery" style="display:none;">
+        <div class="gallery-track" id="galleryTrack">
+          <!-- Photos injected by JS -->
+        </div>
+        <button class="gallery-btn gallery-prev" id="galleryPrev">‹</button>
+        <button class="gallery-btn gallery-next" id="galleryNext">›</button>
+        <div class="gallery-dots" id="galleryDots"></div>
+      </div>
+
+      <!-- Single photo -->
+      <div class="reveal-single-photo" id="revealSinglePhoto" style="display:none;">
+        <div class="single-photo-ring r1"></div>
+        <div class="single-photo-ring r2"></div>
+        <img src="" alt="" id="revealPhoto" class="single-photo-img" />
+        <div class="photo-sparkles">
+          <span>✨</span><span>⭐</span><span>✨</span>
+        </div>
+      </div>
+
+      <!-- Message content -->
+      <div class="reveal-content">
+        <div class="gift-reveal-icon">🎁</div>
+        <h2 class="reveal-title">With All My Love</h2>
+        <div class="reveal-card">
+          <div class="card-quote">"</div>
+          <p class="reveal-message" id="revealMessage"></p>
+        </div>
+        <p class="reveal-from" id="revealFrom"></p>
+        <div class="reveal-actions">
+          <a href="index.html" class="reveal-back-btn">
+            🎂 Back to Birthday
+          </a>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script src="gift.js"></script>
+</body>
+</html>

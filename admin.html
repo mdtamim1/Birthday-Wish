@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin Panel — Birthday Wish</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="admin.css" />
+</head>
+<body>
+
+<!-- ===== PASSWORD GATE ===== -->
+<div id="passwordGate" class="gate-overlay">
+  <div class="gate-card">
+    <div class="gate-icon">🔐</div>
+    <h2 class="gate-title">Admin Panel</h2>
+    <p class="gate-sub">Enter password to continue</p>
+    <div class="gate-input-wrap">
+      <input type="password" id="passwordInput" class="gate-input" placeholder="Password" autocomplete="off" />
+      <button class="gate-btn" id="passwordSubmit">Unlock →</button>
+    </div>
+    <p class="gate-error" id="gateError"></p>
+    <p class="gate-hint">Default password: <code>birthday123</code></p>
+    <a href="index.html" class="gate-back">← Go back to Birthday Page</a>
+  </div>
+</div>
+
+<!-- ===== ADMIN PANEL ===== -->
+<div id="adminPanel" class="admin-panel" style="display:none;">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-brand">
+      <span class="brand-icon">🎂</span>
+      <span class="brand-text">Birthday Admin</span>
+    </div>
+    <nav class="sidebar-nav">
+      <a href="#section-person" class="nav-item active" data-section="person">
+        <span class="nav-icon">👤</span>
+        <span>Recipient Info</span>
+      </a>
+      <a href="#section-messages" class="nav-item" data-section="messages">
+        <span class="nav-icon">💬</span>
+        <span>Messages</span>
+      </a>
+      <a href="#section-wisher" class="nav-item" data-section="wisher">
+        <span class="nav-icon">💕</span>
+        <span>Wisher</span>
+      </a>
+      <a href="#section-gift" class="nav-item" data-section="gift">
+        <span class="nav-icon">🎁</span>
+        <span>Gift Box</span>
+      </a>
+      <a href="#section-music" class="nav-item" data-section="music">
+        <span class="nav-icon">🎵</span>
+        <span>Music</span>
+      </a>
+      <a href="#section-theme" class="nav-item" data-section="theme">
+        <span class="nav-icon">🎨</span>
+        <span>Theme</span>
+      </a>
+      <a href="#section-visibility" class="nav-item" data-section="visibility">
+        <span class="nav-icon">👁️</span>
+        <span>Visibility</span>
+      </a>
+      <a href="#section-security" class="nav-item" data-section="security">
+        <span class="nav-icon">🔐</span>
+        <span>Security</span>
+      </a>
+    </nav>
+    <div class="sidebar-actions">
+      <button class="btn-save" id="saveBtn">💾 Save All Changes</button>
+      <button class="btn-reset" id="resetBtn">🔄 Reset to Default</button>
+    </div>
+    <div class="sidebar-preview-links">
+      <a href="index.html" target="_blank" class="preview-link">👁 Preview Birthday Page</a>
+      <a href="gift.html" target="_blank" class="preview-link">🎁 Preview Gift Page</a>
+    </div>
+  </aside>
+
+  <!-- MAIN CONTENT -->
+  <main class="admin-main">
+    <div class="admin-header">
+      <div>
+        <h1 class="admin-title">Admin Panel</h1>
+        <p class="admin-subtitle">Customize every detail of the birthday experience</p>
+      </div>
+      <div class="header-actions">
+        <div class="save-status" id="saveStatus"></div>
+        <button class="btn-save-top" id="saveBtnTop">💾 Save</button>
+        <button class="hamburger" id="hamburger">☰</button>
+      </div>
+    </div>
+
+    <!-- === RECIPIENT INFO === -->
+    <section class="admin-section" id="section-person">
+      <div class="section-header">
+        <span class="section-icon">👤</span>
+        <div>
+          <h2 class="section-title">Recipient Info</h2>
+          <p class="section-desc">Set the birthday person's details</p>
+        </div>
+      </div>
+
+      <div class="form-grid">
+        <div class="form-group">
+          <label class="form-label">Birthday Person's Name <span class="required">*</span></label>
+          <input type="text" id="nameInput" class="form-input" placeholder="e.g., Riya Sharma" />
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Date of Birth</label>
+          <input type="date" id="birthdateInput" class="form-input" />
+        </div>
+      </div>
+
+      <!-- Photo Upload -->
+      <div class="form-group">
+        <label class="form-label">Profile Photo</label>
+        <div class="photo-upload-area" id="photoUploadArea">
+          <div class="photo-preview-wrap" id="photoPreviewWrap" style="display:none;">
+            <img src="" alt="Preview" id="photoPreview" class="photo-preview-img" />
+            <button class="photo-remove-btn" id="photoRemoveBtn">✕</button>
+          </div>
+          <div class="photo-placeholder" id="photoPlaceholder">
+            <div class="upload-icon">📸</div>
+            <p>Click or drag to upload photo</p>
+            <p class="upload-hint">JPG, PNG, WebP — Max 5MB</p>
+          </div>
+          <input type="file" id="photoInput" accept="image/*" style="display:none;" />
+        </div>
+        <p class="form-hint">This photo will appear in a glowing circular frame on the birthday page</p>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Gallery Photos <span class="badge-new">Multiple</span></label>
+        <div class="multi-photo-drop" id="multiPhotoDrop">
+          <div class="multi-photo-placeholder" id="multiPhotoPlaceholder">
+            <div class="upload-icon">🖼️</div>
+            <p>Click or drag to upload multiple photos</p>
+            <p class="upload-hint">These appear as a 3D slideshow gallery — JPG, PNG, WebP</p>
+          </div>
+          <input type="file" id="multiPhotoInput" accept="image/*" multiple style="display:none;" />
+          <div class="multi-photo-grid" id="multiPhotoGrid"></div>
+        </div>
+        <p class="form-hint">Upload 2+ photos to enable the photo carousel on the birthday page</p>
+      </div>
+    </section>
+
+    <!-- === MESSAGES === -->
+    <section class="admin-section" id="section-messages">
+      <div class="section-header">
+        <span class="section-icon">💬</span>
+        <div>
+          <h2 class="section-title">Messages & Text</h2>
+          <p class="section-desc">Customize the text that appears on the birthday page</p>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Special Subtitle Text</label>
+        <input type="text" id="specialTextInput" class="form-input" placeholder="e.g., May all your dreams come true today 🌸" />
+        <p class="form-hint">Appears below the name in elegant italic style</p>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Birthday Note (Typing Animation)</label>
+        <textarea id="birthdayNoteInput" class="form-textarea" rows="5" placeholder="Write a heartfelt birthday message..."></textarea>
+        <div class="char-counter"><span id="noteCharCount">0</span> characters</div>
+        <p class="form-hint">This message types out letter-by-letter in a glowing card</p>
+      </div>
+    </section>
+
+    <!-- === WISHER === -->
+    <section class="admin-section" id="section-wisher">
+      <div class="section-header">
+        <span class="section-icon">💕</span>
+        <div>
+          <h2 class="section-title">Wisher Details</h2>
+          <p class="section-desc">Show who is wishing — optional</p>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <div class="toggle-row">
+          <div>
+            <label class="form-label">Show Wisher Name</label>
+            <p class="form-hint">Display "With love from [Name]" on birthday page</p>
+          </div>
+          <label class="toggle-switch">
+            <input type="checkbox" id="showWisherToggle" />
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+      </div>
+
+      <div class="form-group" id="wisherNameGroup">
+        <label class="form-label">Wisher's Name</label>
+        <input type="text" id="wisherNameInput" class="form-input" placeholder="e.g., Arif, Your Best Friend, Mom &amp; Dad" />
+        <p class="form-hint">This will appear as: "With love from <em>[name]</em>"</p>
+      </div>
+    </section>
+
+    <!-- === GIFT BOX === -->
+    <section class="admin-section" id="section-gift">
+      <div class="section-header">
+        <span class="section-icon">🎁</span>
+        <div>
+          <h2 class="section-title">Gift Box</h2>
+          <p class="section-desc">Customize what's inside the gift</p>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Gift Message</label>
+        <textarea id="giftMessageInput" class="form-textarea" rows="4" placeholder="Write the message revealed when the gift is opened..."></textarea>
+        <p class="form-hint">This message appears after the gift box animation plays</p>
+      </div>
+
+      <!-- Gift Photo -->
+      <div class="form-group">
+        <label class="form-label">Gift Photo (Optional)</label>
+        <div class="photo-upload-area small" id="giftPhotoUploadArea">
+          <div class="photo-preview-wrap" id="giftPhotoPreviewWrap" style="display:none;">
+            <img src="" alt="Gift Preview" id="giftPhotoPreview" class="photo-preview-img" />
+            <button class="photo-remove-btn" id="giftPhotoRemoveBtn">✕</button>
+          </div>
+          <div class="photo-placeholder" id="giftPhotoPlaceholder">
+            <div class="upload-icon">🖼️</div>
+            <p>Upload a photo to reveal</p>
+          </div>
+          <input type="file" id="giftPhotoInput" accept="image/*" style="display:none;" />
+        </div>
+        <p class="form-hint">A photo that reveals inside the gift box (optional)</p>
+      </div>
+    </section>
+
+    <!-- === MUSIC === -->
+    <section class="admin-section" id="section-music">
+      <div class="section-header">
+        <span class="section-icon">🎵</span>
+        <div>
+          <h2 class="section-title">Background Music</h2>
+          <p class="section-desc">Set a birthday song to play automatically</p>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <div class="toggle-row">
+          <div>
+            <label class="form-label">Enable Background Music</label>
+            <p class="form-hint">Music will auto-play when the page loads</p>
+          </div>
+          <label class="toggle-switch">
+            <input type="checkbox" id="musicEnabledToggle" checked />
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Music URL</label>
+        <input type="url" id="musicUrlInput" class="form-input" placeholder="https://... (direct MP3 link or audio file URL)" />
+        <p class="form-hint">Use a direct link to an MP3 file. Works with most audio hosting services.</p>
+      </div>
+
+      <div class="music-note">
+        <span>💡</span>
+        <div>
+          <strong>Tip:</strong> You can use free birthday music from sites like <em>Pixabay</em> (pixabay.com/music) or upload your own audio file to Google Drive (make it public) and use the direct download link.
+        </div>
+      </div>
+    </section>
+
+    <!-- === THEME === -->
+    <section class="admin-section" id="section-theme">
+      <div class="section-header">
+        <span class="section-icon">🎨</span>
+        <div>
+          <h2 class="section-title">Theme Colors</h2>
+          <p class="section-desc">Customize the color palette of the birthday page</p>
+        </div>
+      </div>
+
+      <!-- Preset themes -->
+      <div class="form-group">
+        <label class="form-label">Quick Luxury Presets</label>
+        <div class="theme-presets">
+          <button class="preset-btn" data-theme="royal-gold" data-c1="#f59e0b" data-c2="#fbbf24" data-ca="#fde68a">
+            <span class="preset-swatch" style="background:linear-gradient(135deg,#f59e0b,#fbbf24,#fde68a)"></span>
+            👑 Royal Gold
+          </button>
+          <button class="preset-btn" data-theme="rose-gold" data-c1="#f43f5e" data-c2="#fb7185" data-ca="#fde047">
+            <span class="preset-swatch" style="background:linear-gradient(135deg,#f43f5e,#fb7185,#fde047)"></span>
+            🌸 Rose Gold & Diamond
+          </button>
+          <button class="preset-btn" data-theme="sapphire-cyan" data-c1="#38bdf8" data-c2="#818cf8" data-ca="#a5f3fc">
+            <span class="preset-swatch" style="background:linear-gradient(135deg,#38bdf8,#818cf8,#a5f3fc)"></span>
+            💎 Cosmic Sapphire
+          </button>
+          <button class="preset-btn" data-theme="emerald-gold" data-c1="#10b981" data-c2="#34d399" data-ca="#fbbf24">
+            <span class="preset-swatch" style="background:linear-gradient(135deg,#10b981,#34d399,#fbbf24)"></span>
+            ✨ Emerald Royale
+          </button>
+          <button class="preset-btn" data-theme="sunset-coral" data-c1="#f97316" data-c2="#fb7185" data-ca="#fde047">
+            <span class="preset-swatch" style="background:linear-gradient(135deg,#f97316,#fb7185,#fde047)"></span>
+            🌅 Sunset Silk
+          </button>
+          <button class="preset-btn" data-theme="galaxy-violet" data-c1="#a855f7" data-c2="#ec4899" data-ca="#38bdf8">
+            <span class="preset-swatch" style="background:linear-gradient(135deg,#a855f7,#ec4899,#38bdf8)"></span>
+            💜 Mystic Galaxy
+          </button>
+        </div>
+      </div>
+
+      <!-- Custom colors -->
+      <div class="form-grid color-grid">
+        <div class="form-group">
+          <label class="form-label">Primary Color</label>
+          <div class="color-input-wrap">
+            <input type="color" id="color1Input" class="color-picker" value="#f59e0b" />
+            <input type="text" id="color1Text" class="form-input color-text" value="#f59e0b" maxlength="7" />
+          </div>
+          <p class="form-hint">Main gradient, rings, buttons</p>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Secondary Color</label>
+          <div class="color-input-wrap">
+            <input type="color" id="color2Input" class="color-picker" value="#fbbf24" />
+            <input type="text" id="color2Text" class="form-input color-text" value="#fbbf24" maxlength="7" />
+          </div>
+          <p class="form-hint">Secondary gradient, accents</p>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Accent Color</label>
+          <div class="color-input-wrap">
+            <input type="color" id="colorAccentInput" class="color-picker" value="#fde68a" />
+            <input type="text" id="colorAccentText" class="form-input color-text" value="#fde68a" maxlength="7" />
+          </div>
+          <p class="form-hint">Name glow, birthdate, decorations</p>
+        </div>
+      </div>
+
+      <!-- Preview -->
+      <div class="theme-preview" id="themePreview">
+        <div class="theme-preview-bar" id="themePreviewBar"></div>
+        <span class="theme-preview-label">Theme Preview</span>
+      </div>
+    </section>
+
+    <!-- === VISIBILITY === -->
+    <section class="admin-section" id="section-visibility">
+      <div class="section-header">
+        <span class="section-icon">👁️</span>
+        <div>
+          <h2 class="section-title">Visibility Controls</h2>
+          <p class="section-desc">Show or hide specific elements on the birthday page</p>
+        </div>
+      </div>
+
+      <div class="toggle-list">
+        <div class="toggle-item">
+          <div class="toggle-info">
+            <span class="toggle-label">🎂 Show Birthdate</span>
+            <span class="toggle-desc">Display the birthday date below the name</span>
+          </div>
+          <label class="toggle-switch">
+            <input type="checkbox" id="showBirthdateToggle" checked />
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+        <div class="toggle-item">
+          <div class="toggle-info">
+            <span class="toggle-label">🌌 Floating 3D Background Memories</span>
+            <span class="toggle-desc">Drift photos across the 3D cosmic background</span>
+          </div>
+          <label class="toggle-switch">
+            <input type="checkbox" id="showFloatingMemoriesToggle" checked />
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+        <div class="toggle-item">
+          <div class="toggle-info">
+            <span class="toggle-label">🎁 Show Gift Button</span>
+            <span class="toggle-desc">Show the "Open Your Gift" button</span>
+          </div>
+          <label class="toggle-switch">
+            <input type="checkbox" id="showGiftToggle" checked />
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+      </div>
+    </section>
+
+    <!-- === SECURITY === -->
+    <section class="admin-section" id="section-security">
+      <div class="section-header">
+        <span class="section-icon">🔐</span>
+        <div>
+          <h2 class="section-title">Security</h2>
+          <p class="section-desc">Change the admin panel password</p>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Current Password</label>
+        <input type="password" id="currentPwInput" class="form-input" placeholder="Enter current password" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">New Password</label>
+        <input type="password" id="newPwInput" class="form-input" placeholder="Enter new password (min 6 chars)" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Confirm New Password</label>
+        <input type="password" id="confirmPwInput" class="form-input" placeholder="Confirm new password" />
+      </div>
+      <button class="btn-change-pw" id="changePwBtn">🔑 Change Password</button>
+      <p class="pw-feedback" id="pwFeedback"></p>
+    </section>
+
+  </main>
+</div>
+
+<!-- Toast notification -->
+<div class="toast" id="toast"></div>
+
+<script src="admin.js"></script>
+</body>
+</html>

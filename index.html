@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0" />
+  <title>Happy Birthday 🎂 ✨ A Special 3D Celebration</title>
+  <meta name="description" content="An ultra-luxury 3D WebGL birthday celebration experience crafted with love and memories." />
+  
+  <!-- Modern Luxury Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700;900&family=Cinzel:wght@600;700;800;900&family=Great+Vibes&family=Playfair+Display:ital,wght@0,600;0,700;0,900;1,400;1,700&family=Outfit:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+<!-- ===== THREE.JS WEBGL 3D UNIVERSE CANVAS CONTAINER ===== -->
+<div id="webgl-container"></div>
+
+<!-- Ambient Stardust Cursor Glow -->
+<div class="cursor-glow" id="cursorGlow"></div>
+
+<!-- ===== FLOATING MUSIC BUTTON IN HEADER ===== -->
+<header class="top-nav-bar">
+  <div class="music-pill" id="musicPill" title="Toggle Birthday Music">
+    <button id="musicToggle" class="music-btn" aria-label="Music Toggle">
+      <span id="musicIcon">🎵</span>
+    </button>
+    <div class="equalizer-bars" id="equalizerBars">
+      <span class="bar"></span>
+      <span class="bar"></span>
+      <span class="bar"></span>
+      <span class="bar"></span>
+    </div>
+    <span class="music-title" id="musicTitle">Birthday Vibes</span>
+  </div>
+</header>
+
+<audio id="bgMusic" loop></audio>
+
+<!-- ===== 3D VIP CELEBRATION INTRO OVERLAY ===== -->
+<div class="intro-overlay" id="introOverlay">
+  <div class="intro-backdrop"></div>
+  <div class="intro-particles" id="introParticles"></div>
+  
+  <div class="intro-card" id="introCard">
+    <div class="intro-crown-pulse">👑</div>
+    <div class="intro-badge">✦ A ROYAL CELEBRATION ✦</div>
+    <h2 class="intro-for-name" id="introForName">For Someone Very Special</h2>
+    <p class="intro-sub">Turn up your volume & unlock your 3D Birthday Experience</p>
+    
+    <button class="intro-unlock-btn" id="introUnlockBtn">
+      <span class="btn-shine"></span>
+      <span class="unlock-icon">✨</span>
+      <span class="unlock-text">TAP TO UNLOCK SURPRISE</span>
+      <span class="unlock-icon">🎁</span>
+    </button>
+  </div>
+</div>
+
+<!-- ===== 3D CINEMATIC STAGE OVERLAY CONTAINER ===== -->
+<main class="stage-container" id="stageContainer">
+
+  <!-- ================= SCENE 1: 👑 3D ROYAL SPOTLIGHT & WISH ================= -->
+  <section class="scene-panel active" id="scene-wish" data-scene="0">
+    <div class="scene-content">
+      
+      <!-- Crown Ribbon Pre-Title -->
+      <div class="luxury-badge" id="heroBadge">
+        <span class="badge-crown">👑</span>
+        <span class="badge-text" id="preTitle">✦ A VERY SPECIAL CELEBRATION ✦</span>
+        <span class="badge-sparkle">✨</span>
+      </div>
+
+      <!-- Main 3D Liquid Gold Typography -->
+      <h1 class="hero-title" id="mainTitle">
+        <span class="title-happy" id="titleHappy">Happy</span>
+        <span class="title-birthday" id="titleBirthday">Birthday</span>
+        <span class="title-toyou" id="titleToYou">To You</span>
+      </h1>
+
+      <!-- Recipient Spotlight Medallion -->
+      <div class="recipient-medallion" id="nameWrapper">
+        <div class="medallion-aura"></div>
+        <div class="medallion-inner">
+          <span class="medallion-icon">👑</span>
+          <h2 class="recipient-name" id="birthdayName">Your Name</h2>
+          <span class="medallion-sparkle">✨</span>
+        </div>
+      </div>
+
+      <!-- Birthdate Badge -->
+      <div class="birthdate-pill" id="birthdateWrapper" style="display:none;">
+        <span class="bdate-icon">🎂</span>
+        <span class="birthdate-text" id="birthdateDisplay"></span>
+      </div>
+
+      <!-- Subtitle Quote -->
+      <p class="special-quote" id="specialText"></p>
+
+      <!-- Premium Flow Beacon -->
+      <div class="flow-indicator" id="flowNext1" data-next="1">
+        <div class="beacon-wrap">
+          <div class="beacon-pulse-ring"></div>
+          <div class="beacon-pulse-ring"></div>
+          <div class="beacon-pulse-ring"></div>
+          <div class="beacon-orb"><span class="beacon-icon">🎂</span></div>
+        </div>
+        <span class="beacon-label">Your birthday cake awaits</span>
+        <div class="beacon-trail"><span></span><span></span><span></span></div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ============ SCENE 2: 🎂 3D ORBIT CAKE EXPERIENCE ============ -->
+  <section class="scene-panel" id="scene-cake" data-scene="1">
+    <div class="scene-content cake-scene-content">
+
+      <!-- 3D Photo Orbit wrap — photos orbit around the WebGL cake -->
+      <div class="cake-orbit-wrap" id="cakeOrbitWrap">
+        <div class="orbit-ring-3d" id="orbitRing3D">
+          <div class="orbit-card" style="--idx:0">
+            <div class="oc-inner">
+              <img class="oc-img" src="" alt="" />
+              <div class="oc-placeholder"><span>📸</span></div>
+              <div class="oc-shine"></div>
+              <div class="oc-frame-top"></div>
+              <div class="oc-frame-bot"></div>
+            </div>
+          </div>
+          <div class="orbit-card" style="--idx:1">
+            <div class="oc-inner">
+              <img class="oc-img" src="" alt="" />
+              <div class="oc-placeholder"><span>📸</span></div>
+              <div class="oc-shine"></div>
+              <div class="oc-frame-top"></div>
+              <div class="oc-frame-bot"></div>
+            </div>
+          </div>
+          <div class="orbit-card" style="--idx:2">
+            <div class="oc-inner">
+              <img class="oc-img" src="" alt="" />
+              <div class="oc-placeholder"><span>📸</span></div>
+              <div class="oc-shine"></div>
+              <div class="oc-frame-top"></div>
+              <div class="oc-frame-bot"></div>
+            </div>
+          </div>
+          <div class="orbit-card" style="--idx:3">
+            <div class="oc-inner">
+              <img class="oc-img" src="" alt="" />
+              <div class="oc-placeholder"><span>📸</span></div>
+              <div class="oc-shine"></div>
+              <div class="oc-frame-top"></div>
+              <div class="oc-frame-bot"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Controls BELOW the cake/orbit — clean separation -->
+      <div class="cake-controls-zone" id="cakeControlsZone">
+
+        <!-- Blow candle premium orb -->
+        <button class="blow-orb-btn" id="blowCandleBtn">
+          <div class="blow-ring blow-ring-1"></div>
+          <div class="blow-ring blow-ring-2"></div>
+          <div class="blow-ring blow-ring-3"></div>
+          <div class="blow-core">
+            <span class="blow-wind-icon">🌬️</span>
+          </div>
+          <span class="blow-orb-label">Blow Candles</span>
+        </button>
+
+        <!-- Wish banner -->
+        <div class="wish-success-banner" id="wishBanner" style="display:none;">
+          <span class="banner-sparkle">✨</span>
+          <span class="banner-txt">🎉 Wish Sent to the Stars! 🥳</span>
+          <span class="banner-sparkle">✨</span>
+        </div>
+
+        <!-- Slice cake button -->
+        <button class="cut-cake-premium-btn" id="cutCakeBtn" style="display:none;">
+          <span class="cut-btn-glow"></span>
+          <span>🔪</span>
+          <span>Slice the Cake</span>
+          <span>🍰</span>
+        </button>
+
+      </div>
+
+      <!-- Sonar Beacon Flow Guide -->
+      <div class="flow-indicator" id="flowNext2" data-next="2">
+        <div class="beacon-wrap">
+          <div class="beacon-pulse-ring"></div>
+          <div class="beacon-pulse-ring"></div>
+          <div class="beacon-pulse-ring"></div>
+          <div class="beacon-orb"><span class="beacon-icon">💌</span></div>
+        </div>
+        <span class="beacon-label">A heartfelt letter awaits you</span>
+        <div class="beacon-trail"><span></span><span></span><span></span></div>
+      </div>
+
+    </div>
+  </section>
+
+
+  <!-- ================= SCENE 3: 💌 3D FROSTED ROYAL LETTER ================= -->
+  <section class="scene-panel" id="scene-note" data-scene="2">
+    <div class="scene-content">
+
+      <div class="luxury-badge">
+        <span class="badge-crown">💌</span>
+        <span class="badge-text">✦ A HEARTFELT MESSAGE ✦</span>
+        <span class="badge-sparkle">✨</span>
+      </div>
+
+      <!-- Luxury Frosted Royal Letter Card -->
+      <div class="letter-card-wrapper" id="noteContainer">
+        <div class="letter-card">
+          <div class="letter-seal-tag">✨ WITH LOVE</div>
+          <div class="letter-header">
+            <span class="letter-icon">🕊️</span>
+            <span class="letter-title">Dearest Birthday Star,</span>
+          </div>
+          <p class="letter-body" id="noteText"></p>
+          <span class="typing-cursor" id="typingCursor">|</span>
+          
+          <div class="wisher-sign-wrap" id="wisherSection" style="display:none;">
+            <p class="wisher-from">Forever with love,</p>
+            <p class="wisher-signature" id="wisherName"></p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Premium Flow Beacon -->
+      <div class="flow-indicator" id="flowNext3" data-next="3">
+        <div class="beacon-wrap">
+          <div class="beacon-pulse-ring"></div>
+          <div class="beacon-pulse-ring"></div>
+          <div class="beacon-pulse-ring"></div>
+          <div class="beacon-orb"><span class="beacon-icon">🎁</span></div>
+        </div>
+        <span class="beacon-label">Your surprise gift is waiting</span>
+        <div class="beacon-trail"><span></span><span></span><span></span></div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ========== SCENE 4: 🎁 3D SURPRISE UNBOXING & MEMORIES ========== -->
+  <section class="scene-panel" id="scene-gift" data-scene="3">
+    <div class="scene-content gift-scene-content">
+
+      <div class="luxury-badge">
+        <span class="badge-crown">🎁</span>
+        <span class="badge-text">✦ YOUR SPECIAL SURPRISE ✦</span>
+        <span class="badge-sparkle">✨</span>
+      </div>
+
+      <!-- Premium 3D Gift Showcase -->
+      <div class="gift-showcase" id="giftCard">
+
+        <!-- Tilted orbital ellipses -->
+        <div class="gift-orbit-ellipse gift-ell-1"></div>
+        <div class="gift-orbit-ellipse gift-ell-2"></div>
+
+        <!-- 3D CSS Gift Box Stage -->
+        <div class="gift-3d-stage">
+          <!-- Glow pedestal -->
+          <div class="gift-pedestal-glow"></div>
+
+          <!-- CSS 3D Box -->
+          <div class="css-gift-box" id="giftBoxVisual">
+            <!-- Inner aura -->
+            <div class="gift-inner-aura"></div>
+
+            <!-- Box body (3 visible faces via CSS) -->
+            <div class="gbox-body">
+              <!-- Front face -->
+              <div class="gbox-face gbox-front">
+                <div class="gbox-ribbon-v"></div>
+                <div class="gbox-stripe-h"></div>
+              </div>
+              <!-- Right face (depth illusion) -->
+              <div class="gbox-face gbox-right"></div>
+              <!-- Top face -->
+              <div class="gbox-face gbox-top">
+                <div class="gbox-ribbon-v"></div>
+                <div class="gbox-ribbon-h"></div>
+              </div>
+            </div>
+
+            <!-- Bow on top -->
+            <div class="gift-bow">
+              <div class="bow-loop bow-l"></div>
+              <div class="bow-loop bow-r"></div>
+              <div class="bow-knot"></div>
+              <div class="bow-tail bow-tl"></div>
+              <div class="bow-tail bow-tr"></div>
+            </div>
+
+            <!-- Orbiting sparkle particles -->
+            <span class="gsp" style="--a:0deg;--d:0s">✦</span>
+            <span class="gsp" style="--a:60deg;--d:0.5s">⋆</span>
+            <span class="gsp" style="--a:120deg;--d:1s">✦</span>
+            <span class="gsp" style="--a:180deg;--d:0.25s">⋆</span>
+            <span class="gsp" style="--a:240deg;--d:0.75s">✦</span>
+            <span class="gsp" style="--a:300deg;--d:1.25s">⋆</span>
+          </div>
+        </div>
+
+        <!-- Glassmorphism Info Panel -->
+        <div class="gift-info-panel">
+          <div class="gift-info-shine"></div>
+          <h3 class="gift-reveal-heading" id="giftHeading">Tap Box to Unwrap!</h3>
+          <p class="gift-reveal-msg" id="giftMessage">This gift is wrapped with all my heart and endless love for you! 💝</p>
+          <button class="luxury-btn gift-open-btn" id="giftOpenBtn">
+            <span class="btn-glow-layer"></span>
+            <span class="btn-icon">✨</span>
+            <span class="btn-text">Open Mystery Box</span>
+            <span class="btn-sparkle">🎀</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Precious Memories Gallery -->
+      <div class="memories-reel-section" id="memoriesReelSection">
+        <div class="reel-header">
+          <span class="reel-sparkle">✨</span>
+          <span class="reel-title">Precious Moments Gallery</span>
+          <span class="reel-sparkle">✨</span>
+        </div>
+        <div class="memories-reel-track" id="memoriesReelTrack"></div>
+      </div>
+
+      <!-- Subtle Begin Again -->
+      <div class="begin-again-wrap">
+        <button class="begin-again-btn" id="btnBeginAgain">↺ Begin Again from the start</button>
+      </div>
+
+    </div>
+  </section>
+
+</main>
+
+<!-- Bottom Dock removed for clean immersive experience -->
+
+<!-- ===== MEMORY LIGHTBOX MODAL ===== -->
+<div class="memory-lightbox" id="memoryLightbox">
+  <div class="lightbox-backdrop" id="lightboxBackdrop"></div>
+  <div class="lightbox-card">
+    <button class="lightbox-close" id="lightboxClose">✕</button>
+    <div class="lightbox-img-wrap">
+      <img src="" alt="Memory" id="lightboxImg" />
+    </div>
+    <div class="lightbox-info">
+      <span class="lightbox-tag">✨ Beautiful Memory</span>
+      <h3 class="lightbox-caption" id="lightboxCaption">A timeless moment</h3>
+    </div>
+  </div>
+</div>
+
+<!-- SCRIPTS: THREE.JS + GSAP + CONFETTI + APP.JS -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
