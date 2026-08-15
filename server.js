@@ -3,6 +3,8 @@ const express = require('express');
 const cors = require('cors');
 const path = require('path');
 const fs = require('fs');
+const http = require('http');
+const https = require('https');
 const multer = require('multer');
 const Database = require('better-sqlite3');
 const { supabase, isSupabaseConfigured, SUPABASE_SCHEMA_SQL } = require('./supabaseClient');
@@ -556,6 +558,35 @@ app.post('/api/upload-multiple', upload.array('files', 12), async (req, res) => 
   } catch (err) {
     console.error('Multiple files upload error:', err);
     res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// Image Proxy Endpoint (Ensures 100% CORS-safe canvas rendering & zero tainted canvas errors)
+app.get('/api/proxy-image', (req, res) => {
+  const targetUrl = req.query.url;
+  if (!targetUrl) return res.status(400).send('URL query parameter is required');
+
+  try {
+    const parsed = new URL(targetUrl);
+    const client = parsed.protocol === 'https:' ? https : http;
+
+    client.get(targetUrl, { headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)' } }, (upstream) => {
+      if (upstream.statusCode >= 400) {
+        return res.status(upstream.statusCode).send('Upstream image error');
+      }
+      res.setHeader('Access-Control-Allow-Origin', '*');
+      res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
+      res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+      res.setHeader('Cache-Control', 'public, max-age=86400');
+      const contentType = upstream.headers['content-type'] || 'image/jpeg';
+      res.setHeader('Content-Type', contentType);
+      upstream.pipe(res);
+    }).on('error', (err) => {
+      console.warn('Proxy image fetch error:', err.message);
+      res.status(500).send('Proxy error: ' + err.message);
+    });
+  } catch (e) {
+    res.status(400).send('Invalid URL format');
   }
 });
 

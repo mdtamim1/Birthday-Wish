@@ -2173,50 +2173,66 @@ if (document.readyState === 'complete' || document.readyState === 'interactive')
   document.addEventListener('DOMContentLoaded', initThreeScene);
 }
 
-// Helper: Robust CORS-safe image loader for Canvas
-function loadCardImage(url) {
-  return new Promise((resolve) => {
-    if (!url || typeof url !== 'string' || !url.trim()) {
-      resolve(null);
-      return;
-    }
+// Helper: Robust CORS-safe image loader for Canvas (Ensures zero tainted-canvas errors)
+async function loadCardImage(url) {
+  if (!url || typeof url !== 'string' || !url.trim()) return null;
+  const cleanUrl = url.trim();
 
-    let resolved = false;
+  // 1. Data URI: load directly
+  if (cleanUrl.startsWith('data:')) {
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.onload = () => resolve(img);
+      img.onerror = () => resolve(null);
+      img.src = cleanUrl;
+    });
+  }
+
+  // 2. Fetch as Blob (using /api/proxy-image if external)
+  const isExternal = cleanUrl.startsWith('http://') || cleanUrl.startsWith('https://');
+  const targetFetchUrl = isExternal && !cleanUrl.includes(window.location.host)
+    ? `/api/proxy-image?url=${encodeURIComponent(cleanUrl)}`
+    : cleanUrl;
+
+  try {
+    const res = await fetch(targetFetchUrl);
+    if (res.ok) {
+      const blob = await res.blob();
+      const blobUrl = URL.createObjectURL(blob);
+      return new Promise((resolve) => {
+        const img = new Image();
+        img.onload = () => {
+          resolve(img);
+        };
+        img.onerror = () => {
+          URL.revokeObjectURL(blobUrl);
+          resolve(null);
+        };
+        img.src = blobUrl;
+      });
+    }
+  } catch (fetchErr) {
+    console.warn('Blob image fetch fallback:', fetchErr);
+  }
+
+  // 3. Fallback to image tag with crossOrigin
+  return new Promise((resolve) => {
     const img = new Image();
     img.crossOrigin = 'anonymous';
-
-    const timer = setTimeout(() => {
-      if (!resolved) {
-        resolved = true;
-        resolve(null);
-      }
-    }, 4500);
-
+    const timer = setTimeout(() => resolve(null), 3500);
     img.onload = () => {
-      if (!resolved) {
-        resolved = true;
-        clearTimeout(timer);
-        resolve(img);
-      }
+      clearTimeout(timer);
+      resolve(img);
     };
-
     img.onerror = () => {
-      if (!resolved) {
-        resolved = true;
-        clearTimeout(timer);
-        // Fallback retry without crossOrigin for local/data assets
-        const fallbackImg = new Image();
-        fallbackImg.onload = () => resolve(fallbackImg);
-        fallbackImg.onerror = () => resolve(null);
-        fallbackImg.src = url;
-      }
+      clearTimeout(timer);
+      resolve(null);
     };
-
-    img.src = url;
+    img.src = targetFetchUrl;
   });
 }
 
-// ===== 📸 ROYAL KEEPSAKE SOUVENIR CARD GENERATOR (1080x1920 HD STORY CARD) =====
+// ===== 📸 ULTRA-PREMIUM ROYAL KEEPSAKE SOUVENIR CARD (1080x1920 HD STORY CARD) =====
 async function generateRoyalSouvenirCard() {
   const btn = document.getElementById('btnDownloadSouvenir');
   const origBtnHTML = btn ? btn.innerHTML : '';
@@ -2246,36 +2262,36 @@ async function generateRoyalSouvenirCard() {
     // 1. Deep Celestial Royal Velvet Gradient Background
     const bgGrad = ctx.createLinearGradient(0, 0, W, H);
     bgGrad.addColorStop(0, '#060212');
-    bgGrad.addColorStop(0.25, '#120524');
-    bgGrad.addColorStop(0.55, '#1e0735');
-    bgGrad.addColorStop(0.85, '#280942');
+    bgGrad.addColorStop(0.22, '#120524');
+    bgGrad.addColorStop(0.52, '#1e0735');
+    bgGrad.addColorStop(0.82, '#280942');
     bgGrad.addColorStop(1, '#090214');
     ctx.fillStyle = bgGrad;
     ctx.fillRect(0, 0, W, H);
 
     // 2. Cosmic Nebula Radial Glows
-    const radGlow1 = ctx.createRadialGradient(W / 2, 450, 40, W / 2, 450, 520);
-    radGlow1.addColorStop(0, 'rgba(218, 94, 201, 0.32)');
-    radGlow1.addColorStop(0.5, 'rgba(236, 72, 153, 0.16)');
+    const radGlow1 = ctx.createRadialGradient(W / 2, 400, 30, W / 2, 400, 520);
+    radGlow1.addColorStop(0, 'rgba(218, 94, 201, 0.35)');
+    radGlow1.addColorStop(0.5, 'rgba(236, 72, 153, 0.18)');
     radGlow1.addColorStop(1, 'transparent');
     ctx.fillStyle = radGlow1;
     ctx.fillRect(0, 0, W, H);
 
-    const radGlow2 = ctx.createRadialGradient(W / 2, 1250, 60, W / 2, 1250, 620);
+    const radGlow2 = ctx.createRadialGradient(W / 2, 1200, 50, W / 2, 1200, 600);
     radGlow2.addColorStop(0, 'rgba(245, 158, 11, 0.22)');
     radGlow2.addColorStop(0.6, 'rgba(168, 85, 247, 0.12)');
     radGlow2.addColorStop(1, 'transparent');
     ctx.fillStyle = radGlow2;
     ctx.fillRect(0, 0, W, H);
 
-    const radGlow3 = ctx.createRadialGradient(W / 2, 1680, 50, W / 2, 1680, 450);
+    const radGlow3 = ctx.createRadialGradient(W / 2, 1680, 40, W / 2, 1680, 480);
     radGlow3.addColorStop(0, 'rgba(236, 72, 153, 0.25)');
     radGlow3.addColorStop(1, 'transparent');
     ctx.fillStyle = radGlow3;
     ctx.fillRect(0, 0, W, H);
 
-    // 3. Stardust Particles & Golden Sparkles
-    for (let i = 0; i < 240; i++) {
+    // 3. Stardust Particles & Golden Sparkle Stars
+    for (let i = 0; i < 260; i++) {
       const px = Math.random() * W;
       const py = Math.random() * H;
       const pr = Math.random() * 2.2 + 0.4;
@@ -2285,8 +2301,8 @@ async function generateRoyalSouvenirCard() {
       ctx.arc(px, py, pr, 0, Math.PI * 2);
       ctx.fill();
 
-      // Mini golden starlight crosses
-      if (i % 14 === 0) {
+      // Golden starlight crosses
+      if (i % 12 === 0) {
         ctx.strokeStyle = 'rgba(254, 240, 138, 0.65)';
         ctx.lineWidth = 1.3;
         ctx.beginPath();
@@ -2299,7 +2315,7 @@ async function generateRoyalSouvenirCard() {
     }
 
     // 4. Double Royal Gold Border
-    const pad = 44;
+    const pad = 42;
     ctx.save();
     ctx.strokeStyle = '#f59e0b';
     ctx.lineWidth = 4;
@@ -2312,42 +2328,42 @@ async function generateRoyalSouvenirCard() {
     ctx.strokeStyle = 'rgba(255, 215, 0, 0.45)';
     ctx.lineWidth = 1.6;
     ctx.shadowBlur = 9;
-    roundRect(ctx, pad + 16, pad + 16, W - (pad + 16) * 2, H - (pad + 16) * 2, 32);
+    roundRect(ctx, pad + 14, pad + 14, W - (pad + 14) * 2, H - (pad + 14) * 2, 32);
     ctx.stroke();
     ctx.restore();
 
     // Corner Ornaments
-    drawCornerStar(ctx, pad + 32, pad + 32);
-    drawCornerStar(ctx, W - pad - 32, pad + 32);
-    drawCornerStar(ctx, pad + 32, H - pad - 32);
-    drawCornerStar(ctx, W - pad - 32, H - pad - 32);
+    drawCornerStar(ctx, pad + 30, pad + 30);
+    drawCornerStar(ctx, W - pad - 30, pad + 30);
+    drawCornerStar(ctx, pad + 30, H - pad - 30);
+    drawCornerStar(ctx, W - pad - 30, H - pad - 30);
 
     // 5. Crown Header
     ctx.font = '52px "Cinzel", Georgia, serif';
     ctx.textAlign = 'center';
     ctx.fillStyle = '#ffd700';
-    ctx.shadowColor = 'rgba(255, 215, 0, 0.7)';
+    ctx.shadowColor = 'rgba(255, 215, 0, 0.8)';
     ctx.shadowBlur = 25;
-    ctx.fillText('👑', W / 2, 135);
+    ctx.fillText('👑', W / 2, 125);
 
-    ctx.font = 'bold 22px "Outfit", "Segoe UI", sans-serif';
+    ctx.font = 'bold 21px "Outfit", "Segoe UI", sans-serif';
     ctx.letterSpacing = '8px';
     ctx.fillStyle = '#fef08a';
     ctx.shadowBlur = 15;
-    ctx.fillText('✦ A ROYAL BIRTHDAY CELEBRATION ✦', W / 2, 185);
+    ctx.fillText('✦ A ROYAL BIRTHDAY CELEBRATION ✦', W / 2, 172);
 
     // 6. Recipient Photo in Gold Medallion
     const rawPhotoUrl = S.photo || (S.photos && S.photos[0]) || S.giftPhoto || '';
     const img = await loadCardImage(rawPhotoUrl);
 
     const photoCenterX = W / 2;
-    const photoCenterY = 445;
-    const photoRadius = 195;
+    const photoCenterY = 385;
+    const photoRadius = 160;
 
     // Glowing photo frame halo
     ctx.save();
     ctx.beginPath();
-    ctx.arc(photoCenterX, photoCenterY, photoRadius + 14, 0, Math.PI * 2);
+    ctx.arc(photoCenterX, photoCenterY, photoRadius + 12, 0, Math.PI * 2);
     ctx.fillStyle = 'rgba(245, 158, 11, 0.35)';
     ctx.shadowColor = '#f59e0b';
     ctx.shadowBlur = 40;
@@ -2412,7 +2428,7 @@ async function generateRoyalSouvenirCard() {
 
     // 7. "HAPPY BIRTHDAY" Royal Title
     ctx.save();
-    ctx.font = 'bold 78px "Cinzel Decorative", "Cinzel", Georgia, serif';
+    ctx.font = 'bold 74px "Cinzel Decorative", "Cinzel", Georgia, serif';
     ctx.textAlign = 'center';
     const titleGrad = ctx.createLinearGradient(W / 2 - 320, 0, W / 2 + 320, 0);
     titleGrad.addColorStop(0, '#ffffff');
@@ -2421,61 +2437,61 @@ async function generateRoyalSouvenirCard() {
     titleGrad.addColorStop(1, '#ffd700');
     ctx.fillStyle = titleGrad;
     ctx.shadowColor = 'rgba(245, 158, 11, 0.85)';
-    ctx.shadowBlur = 30;
-    ctx.fillText('HAPPY BIRTHDAY', W / 2, 715);
+    ctx.shadowBlur = 28;
+    ctx.fillText('HAPPY BIRTHDAY', W / 2, 615);
     ctx.restore();
 
     // 8. Recipient Name Script Calligraphy
     ctx.save();
-    ctx.font = 'italic bold 70px "Playfair Display", "Great Vibes", Georgia, serif';
+    ctx.font = 'italic bold 68px "Playfair Display", "Great Vibes", Georgia, serif';
     ctx.textAlign = 'center';
     ctx.fillStyle = '#ffffff';
     ctx.shadowColor = themeS || '#ec4899';
     ctx.shadowBlur = 26;
-    ctx.fillText(S.name || 'Your Name', W / 2, 792);
+    ctx.fillText(S.name || 'Special Someone', W / 2, 688);
     ctx.restore();
 
     // 9. Special Subtitle / Date Pill
     const birthdateFormatted = S.birthdate ? formatDate(S.birthdate) : 'A Day of Boundless Joy & Magic';
     ctx.save();
-    const pillW = Math.min(740, ctx.measureText(birthdateFormatted).width + 130);
-    const pillH = 46;
+    const pillW = Math.min(740, ctx.measureText(birthdateFormatted).width + 120);
+    const pillH = 42;
     const pillX = (W - pillW) / 2;
-    const pillY = 828;
+    const pillY = 720;
 
     ctx.fillStyle = 'rgba(255, 255, 255, 0.08)';
     ctx.strokeStyle = 'rgba(255, 215, 0, 0.45)';
     ctx.lineWidth = 1.5;
-    roundRect(ctx, pillX, pillY, pillW, pillH, 23);
+    roundRect(ctx, pillX, pillY, pillW, pillH, 21);
     ctx.fill();
     ctx.stroke();
 
-    ctx.font = '600 21px "Outfit", "Segoe UI", sans-serif';
+    ctx.font = '600 20px "Outfit", "Segoe UI", sans-serif';
     ctx.fillStyle = '#fef08a';
     ctx.shadowColor = '#f59e0b';
     ctx.shadowBlur = 10;
     ctx.textAlign = 'center';
-    ctx.fillText(`🎂 ${birthdateFormatted} ✨`, W / 2, pillY + 30);
+    ctx.fillText(`🎂 ${birthdateFormatted} ✨`, W / 2, pillY + 28);
     ctx.restore();
 
     // Special Subtitle Text (if present)
     if (S.specialText && S.specialText.trim()) {
       ctx.save();
-      ctx.font = 'italic 23px "Playfair Display", Georgia, serif';
+      ctx.font = 'italic 22px "Playfair Display", Georgia, serif';
       ctx.fillStyle = '#fde68a';
       ctx.textAlign = 'center';
       ctx.shadowColor = 'rgba(0,0,0,0.8)';
       ctx.shadowBlur = 10;
-      ctx.fillText(`🌸 ${S.specialText} 🌸`, W / 2, 902);
+      ctx.fillText(`🌸 ${S.specialText} 🌸`, W / 2, 792);
       ctx.restore();
     }
 
     // 10. Heartfelt Birthday Note Container
     ctx.save();
-    const boxPad = 85;
+    const boxPad = 80;
     const boxW = W - boxPad * 2;
-    const boxH = 370;
-    const boxY = 935;
+    const boxH = 320;
+    const boxY = 825;
 
     // Frosted card background
     ctx.fillStyle = 'rgba(255, 255, 255, 0.06)';
@@ -2488,65 +2504,130 @@ async function generateRoyalSouvenirCard() {
     ctx.stroke();
 
     // Quotation Marks
-    ctx.font = 'bold 70px "Cinzel", Georgia, serif';
-    ctx.fillStyle = 'rgba(254, 240, 138, 0.35)';
+    ctx.font = 'bold 64px "Cinzel", Georgia, serif';
+    ctx.fillStyle = 'rgba(254, 240, 138, 0.4)';
     ctx.textAlign = 'left';
-    ctx.fillText('“', boxPad + 24, boxY + 60);
+    ctx.fillText('“', boxPad + 22, boxY + 54);
 
     // Note Text Wrapped
     const noteText = S.birthdayNote || S.specialText || 'May this special birthday bring you unlimited happiness, radiant health, and every blessing your heart desires!';
-    ctx.font = 'italic 26px "Playfair Display", Georgia, serif';
+    ctx.font = 'italic 24px "Playfair Display", Georgia, serif';
     ctx.fillStyle = '#f8fafc';
     ctx.shadowColor = 'rgba(0, 0, 0, 0.9)';
     ctx.shadowBlur = 12;
     ctx.textAlign = 'center';
 
-    wrapText(ctx, noteText, W / 2, boxY + 95, boxW - 80, 42);
+    wrapText(ctx, noteText, W / 2, boxY + 85, boxW - 70, 38);
     ctx.restore();
 
-    // 11. 💕 WISHER DEDICATION SECTION (Who is Wishing - ALWAYS INCLUDED & HIGHLIGHTED)
+    // 11. 🎁 GIFT PAGE SURPRISE SECTION (INCORPORATING COMPLETE GIFT DATA)
+    const giftMessageText = S.giftMessage || 'This gift is wrapped with all my heart for you! 💝';
+    const giftPhotoUrl = S.giftPhoto || (S.photos && S.photos[1]) || '';
+    const giftImg = giftPhotoUrl ? await loadCardImage(giftPhotoUrl) : null;
+
+    ctx.save();
+    const giftCardY = 1175;
+    const giftCardH = giftImg ? 260 : 200;
+    const giftCardPad = 80;
+    const giftCardW = W - giftCardPad * 2;
+
+    // Outer gift card container with subtle purple-gold glow
+    ctx.fillStyle = 'rgba(218, 94, 201, 0.08)';
+    ctx.strokeStyle = 'rgba(245, 158, 11, 0.45)';
+    ctx.lineWidth = 1.8;
+    ctx.shadowColor = 'rgba(218, 94, 201, 0.35)';
+    ctx.shadowBlur = 24;
+    roundRect(ctx, giftCardPad, giftCardY, giftCardW, giftCardH, 20);
+    ctx.fill();
+    ctx.stroke();
+
+    // Gift Header Badge
+    ctx.font = 'bold 18px "Outfit", "Segoe UI", sans-serif';
+    ctx.letterSpacing = '4px';
+    ctx.fillStyle = '#ffd700';
+    ctx.shadowColor = '#f59e0b';
+    ctx.shadowBlur = 12;
+    ctx.textAlign = 'center';
+    ctx.fillText('🎁 ROYAL GIFT & SURPRISE UNBOXED 🎁', W / 2, giftCardY + 40);
+
+    // If a secondary/gift photo exists, draw preview polaroid beside message
+    if (giftImg) {
+      const gImgSize = 150;
+      const gImgX = giftCardPad + 30;
+      const gImgY = giftCardY + 68;
+
+      ctx.save();
+      ctx.strokeStyle = '#ffd700';
+      ctx.lineWidth = 3;
+      ctx.shadowColor = 'rgba(0,0,0,0.8)';
+      ctx.shadowBlur = 15;
+      roundRect(ctx, gImgX, gImgY, gImgSize, gImgSize, 14);
+      ctx.stroke();
+      ctx.clip();
+      ctx.drawImage(giftImg, gImgX, gImgY, gImgSize, gImgSize);
+      ctx.restore();
+
+      // Gift Message text beside image
+      ctx.font = 'italic 21px "Playfair Display", Georgia, serif';
+      ctx.fillStyle = '#fef08a';
+      ctx.shadowColor = 'rgba(0, 0, 0, 0.9)';
+      ctx.shadowBlur = 10;
+      ctx.textAlign = 'left';
+      wrapText(ctx, `"${giftMessageText}"`, gImgX + gImgSize + 30, giftCardY + 110, giftCardW - gImgSize - 90, 32);
+    } else {
+      // Full width gift message
+      ctx.font = 'italic 23px "Playfair Display", Georgia, serif';
+      ctx.fillStyle = '#fef08a';
+      ctx.shadowColor = 'rgba(0, 0, 0, 0.9)';
+      ctx.shadowBlur = 10;
+      ctx.textAlign = 'center';
+      wrapText(ctx, `"${giftMessageText}"`, W / 2, giftCardY + 95, giftCardW - 60, 34);
+    }
+    ctx.restore();
+
+    // 12. 💕 WISHER DEDICATION SECTION
     ctx.save();
     const wisherName = (S.wisherName && S.wisherName.trim()) ? S.wisherName : 'Your Loved One';
-    const isWisherEnabled = S.showWisher || (S.wisherName && S.wisherName.trim().length > 0);
+    const wisherSectionY = giftCardY + giftCardH + 30;
 
     // Decorative divider line with diamond
     ctx.strokeStyle = 'rgba(245, 158, 11, 0.4)';
     ctx.lineWidth = 1.5;
     ctx.beginPath();
-    ctx.moveTo(W / 2 - 260, 1345);
-    ctx.lineTo(W / 2 - 25, 1345);
-    ctx.moveTo(W / 2 + 25, 1345);
-    ctx.lineTo(W / 2 + 260, 1345);
+    ctx.moveTo(W / 2 - 240, wisherSectionY);
+    ctx.lineTo(W / 2 - 25, wisherSectionY);
+    ctx.moveTo(W / 2 + 25, wisherSectionY);
+    ctx.lineTo(W / 2 + 240, wisherSectionY);
     ctx.stroke();
 
     ctx.font = '18px sans-serif';
     ctx.fillStyle = '#ffd700';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText('◆', W / 2, 1345);
+    ctx.fillText('◆', W / 2, wisherSectionY);
 
     // Dedication Intro
-    ctx.font = 'italic 23px "Playfair Display", Georgia, serif';
+    ctx.font = 'italic 21px "Playfair Display", Georgia, serif';
     ctx.fillStyle = '#fde68a';
     ctx.textAlign = 'center';
     ctx.shadowColor = '#f59e0b';
     ctx.shadowBlur = 12;
-    ctx.fillText('With Endless Love, Warmth & Blessings,', W / 2, 1395);
+    ctx.fillText('With Endless Love, Warmth & Blessings,', W / 2, wisherSectionY + 38);
 
-    // Wisher Name Box / Seal
-    const wisherPillW = Math.min(800, ctx.measureText(wisherName).width + 240);
-    const wisherPillH = 64;
+    // Wisher Name Seal
+    const wisherPillW = Math.min(800, ctx.measureText(wisherName).width + 220);
+    const wisherPillH = 58;
     const wisherPillX = (W - wisherPillW) / 2;
-    const wisherPillY = 1435;
+    const wisherPillY = wisherSectionY + 62;
 
-    ctx.fillStyle = 'rgba(236, 72, 153, 0.14)';
+    ctx.fillStyle = 'rgba(236, 72, 153, 0.16)';
     ctx.strokeStyle = 'rgba(251, 191, 36, 0.6)';
     ctx.lineWidth = 2;
-    roundRect(ctx, wisherPillX, wisherPillY, wisherPillW, wisherPillH, 32);
+    roundRect(ctx, wisherPillX, wisherPillY, wisherPillW, wisherPillH, 29);
     ctx.fill();
     ctx.stroke();
 
-    ctx.font = 'italic bold 32px "Playfair Display", Georgia, serif';
+    ctx.font = 'italic bold 30px "Playfair Display", Georgia, serif';
     const wisherGrad = ctx.createLinearGradient(W / 2 - 200, 0, W / 2 + 200, 0);
     wisherGrad.addColorStop(0, '#ffffff');
     wisherGrad.addColorStop(0.4, '#fef08a');
@@ -2555,85 +2636,61 @@ async function generateRoyalSouvenirCard() {
     ctx.shadowColor = 'rgba(244, 63, 94, 0.7)';
     ctx.shadowBlur = 20;
     ctx.textAlign = 'center';
-    ctx.fillText(`💖 ${wisherName} 💖`, W / 2, wisherPillY + 43);
+    ctx.fillText(`💖 ${wisherName} 💖`, W / 2, wisherPillY + 39);
     ctx.restore();
 
-    // 12. Gift Blessing / Special Quote (if present)
-    if (S.giftMessage && S.giftMessage.trim()) {
-      ctx.save();
-      const giftBoxPad = 120;
-      const giftBoxW = W - giftBoxPad * 2;
-      const giftBoxY = 1535;
-      ctx.font = 'italic 21px "Playfair Display", Georgia, serif';
-      ctx.fillStyle = '#e2e8f0';
-      ctx.textAlign = 'center';
-      ctx.shadowColor = 'rgba(0,0,0,0.8)';
-      ctx.shadowBlur = 8;
-      wrapText(ctx, `🎁 "${S.giftMessage}"`, W / 2, giftBoxY + 30, giftBoxW - 40, 32);
-      ctx.restore();
-    }
-
-    // 13. Bottom Watermark & VIP Story Badge
+    // 13. VIP Story Footer & Live Watermark
     ctx.save();
-    ctx.font = 'bold 20px "Outfit", "Segoe UI", sans-serif';
-    ctx.letterSpacing = '6px';
-    ctx.fillStyle = 'rgba(254, 240, 138, 0.85)';
+    const footerY = 1760;
+    ctx.font = 'bold 18px "Outfit", "Segoe UI", sans-serif';
+    ctx.letterSpacing = '5px';
+    ctx.fillStyle = 'rgba(254, 240, 138, 0.9)';
     ctx.textAlign = 'center';
     ctx.shadowColor = '#f59e0b';
     ctx.shadowBlur = 14;
-    ctx.fillText('✨ ROYAL VIP EDITION • FOREVER CHERISHED ✨', W / 2, 1720);
+    ctx.fillText('✨ ROYAL VIP EDITION • FOREVER CHERISHED ✨', W / 2, footerY);
 
-    ctx.font = '16px "Outfit", "Segoe UI", sans-serif';
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.55)';
-    ctx.fillText('Crafted with love on this special day', W / 2, 1758);
+    const liveSlug = (typeof currentWishSlug !== 'undefined' && currentWishSlug) ? currentWishSlug : (S.id || 'hasif');
+    const liveLinkText = `${window.location.host}/wish/${liveSlug}`;
+
+    ctx.font = '15px "Outfit", "Segoe UI", sans-serif';
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
+    ctx.fillText(`🌐 ${liveLinkText}`, W / 2, footerY + 32);
     ctx.restore();
 
-    // 14. Convert Canvas to High-Res Blob & Trigger Seamless Download
-    function triggerBlobDownload(blob) {
-      const url = URL.createObjectURL(blob);
+    // 14. Bulletproof High-Res Blob & DataURL Download
+    function triggerDownload(downloadUrl) {
       const a = document.createElement('a');
       const safeName = (S.name || 'Birthday').replace(/[^\w\s-]/gi, '').trim().replace(/\s+/g, '-');
       a.download = `Royal-Birthday-Keepsake-${safeName}.png`;
-      a.href = url;
+      a.href = downloadUrl;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
-      setTimeout(() => URL.revokeObjectURL(url), 10000);
 
-      // Celebration confetti & feedback
-      launchConfetti(280);
-      showLiveToast('📸 Royal Keepsake Card downloaded! Share it on your story! ✨');
+      if (typeof launchConfetti === 'function') {
+        launchConfetti(280);
+      } else if (typeof confetti === 'function') {
+        confetti({ particleCount: 200, spread: 100, origin: { y: 0.6 } });
+      }
+
+      showLiveToast('📸 Royal Keepsake Card saved! Share it on WhatsApp & Instagram! ✨');
     }
 
     if (canvas.toBlob) {
       canvas.toBlob((blob) => {
         if (blob) {
-          triggerBlobDownload(blob);
+          const blobUrl = URL.createObjectURL(blob);
+          triggerDownload(blobUrl);
+          setTimeout(() => URL.revokeObjectURL(blobUrl), 15000);
         } else {
-          // Fallback to dataURL
           const dataUrl = canvas.toDataURL('image/png', 1.0);
-          const a = document.createElement('a');
-          const safeName = (S.name || 'Birthday').replace(/[^\w\s-]/gi, '').trim().replace(/\s+/g, '-');
-          a.download = `Royal-Birthday-Keepsake-${safeName}.png`;
-          a.href = dataUrl;
-          document.body.appendChild(a);
-          a.click();
-          document.body.removeChild(a);
-          launchConfetti(280);
-          showLiveToast('📸 Royal Keepsake Card downloaded! Share it on your story! ✨');
+          triggerDownload(dataUrl);
         }
       }, 'image/png', 1.0);
     } else {
       const dataUrl = canvas.toDataURL('image/png', 1.0);
-      const a = document.createElement('a');
-      const safeName = (S.name || 'Birthday').replace(/[^\w\s-]/gi, '').trim().replace(/\s+/g, '-');
-      a.download = `Royal-Birthday-Keepsake-${safeName}.png`;
-      a.href = dataUrl;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      launchConfetti(280);
-      showLiveToast('📸 Royal Keepsake Card downloaded! Share it on your story! ✨');
+      triggerDownload(dataUrl);
     }
 
   } catch (err) {
