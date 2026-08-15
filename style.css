@@ -90,10 +90,13 @@ html, body {
   right: 0;
   z-index: 100;
   display: flex;
-  justify-content: center;
+  justify-content: space-between;
   align-items: center;
-  padding: 0 16px;
+  padding: 0 24px;
+  max-width: 1360px;
+  margin: 0 auto;
   pointer-events: none;
+  gap: 12px;
 }
 
 .music-pill {
@@ -2901,5 +2904,68 @@ html, body {
 @keyframes pulseLiveDot {
   0%, 100% { transform: scale(1); opacity: 1; }
   50% { transform: scale(1.4); opacity: 0.7; }
+}
+
+/* ================= MODAL RESPONSIVE ENHANCEMENTS ================= */
+.custom-modal-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  z-index: 99999;
+  padding: 16px;
+  overflow-y: auto;
+  align-items: center;
+  justify-content: center;
+}
+
+.custom-modal-card {
+  max-height: 90vh;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(218, 94, 201, 0.4) transparent;
+}
+
+.custom-modal-card::-webkit-scrollbar {
+  width: 6px;
+}
+
+.custom-modal-card::-webkit-scrollbar-thumb {
+  background: rgba(218, 94, 201, 0.4);
+  border-radius: 10px;
+}
+
+@media (max-width: 640px) {
+  .top-nav-bar {
+    top: 10px;
+    padding: 0 10px;
+    gap: 6px;
+  }
+  .music-pill {
+    padding: 4px 10px 4px 6px;
+    gap: 6px;
+  }
+  .music-btn {
+    width: 28px;
+    height: 28px;
+    font-size: 0.8rem;
+  }
+  .music-title {
+    font-size: 0.72rem;
+    max-width: 90px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .top-nav-actions button {
+    padding: 5px 10px !important;
+    font-size: 0.75rem !important;
+  }
+  .custom-modal-card {
+    padding: 20px 16px !important;
+    border-radius: 18px !important;
+  }
 }
 

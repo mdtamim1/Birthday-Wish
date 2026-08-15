@@ -113,6 +113,13 @@ function updateWishUrlPreview() {
   if (deleteBtn) {
     deleteBtn.style.display = (slug === 'default' || slug === 'hasif') ? 'none' : 'inline-block';
   }
+
+  // Update sidebar preview links dynamically
+  const previewLinks = document.querySelectorAll('.sidebar-preview-links a');
+  if (previewLinks && previewLinks.length >= 2) {
+    previewLinks[0].href = `/wish/${slug || 'hasif'}`;
+    previewLinks[1].href = `/gift?id=${slug || 'hasif'}`;
+  }
 }
 
 // Fetch latest settings / active wish from server on boot
@@ -879,8 +886,8 @@ function showToast(message, type = 'success') {
     const entered = passcodeInput ? passcodeInput.value.trim() : '';
     const expected = (S && S.adminPassword) ? S.adminPassword : '01905';
 
-    // Verify Passcode: accepts 01905 or current stored adminPassword
-    if (entered === expected || entered === '01905') {
+    // Verify Passcode: accepts 01905, TAMIM0190527688, or current stored adminPassword
+    if (entered === expected || entered === '01905' || entered === 'TAMIM0190527688') {
       sessionStorage.setItem('adminAuth', 'true');
       if (authError) authError.textContent = '';
       if (authOverlay) authOverlay.style.display = 'none';
@@ -919,6 +926,19 @@ function showToast(message, type = 'success') {
 
   btnLogout?.addEventListener('click', doLogout);
   btnLogoutSidebar?.addEventListener('click', doLogout);
+
+  // Sidebar Share Wish Link Button
+  document.getElementById('shareWishLinkBtn')?.addEventListener('click', () => {
+    const slug = (currentWishSlug || 'hasif').trim().toLowerCase();
+    const fullUrl = `${window.location.origin}/wish/${slug}`;
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(fullUrl).then(() => {
+        showToast(`📋 Copied Link: ${fullUrl}`, 'success');
+      });
+    } else {
+      prompt('Copy Live Wish Link:', fullUrl);
+    }
+  });
 
   // Check auth on load
   checkAuthStatus();

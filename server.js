@@ -602,16 +602,46 @@ app.post('/api/wishes/request', async (req, res) => {
 // 2. PUBLIC: Customer Track Wish Status
 app.get('/api/wishes/track/:query', async (req, res) => {
   try {
-    const q = (req.params.query || '').trim().toLowerCase();
-    const wish = await getWishByIdOrSlug(q);
+    const rawQuery = (req.params.query || '').trim();
+    const qLower = rawQuery.toLowerCase();
+    const cleanDigits = rawQuery.replace(/\D/g, '');
 
-    if (wish && (wish.id.toLowerCase() === q || (wish.slug && wish.slug.toLowerCase() === q) || (wish.customerContact && wish.customerContact.toLowerCase() === q))) {
+    let wish = await getWishByIdOrSlug(rawQuery);
+
+    // If direct slug/ID didn't match or contact didn't match, search list
+    const isDirectMatch = wish && (
+      wish.id?.toLowerCase() === qLower ||
+      wish.slug?.toLowerCase() === qLower ||
+      (wish.customerContact && wish.customerContact.toLowerCase() === qLower) ||
+      (cleanDigits.length >= 6 && wish.customerContact && wish.customerContact.replace(/\D/g, '').includes(cleanDigits))
+    );
+
+    if (!isDirectMatch) {
+      const allWishes = await listAllWishes('all');
+      const foundInList = allWishes.find(w => {
+        const idMatch = w.id && w.id.toLowerCase() === qLower;
+        const slugMatch = w.slug && w.slug.toLowerCase() === qLower;
+        const contactMatch = w.customerContact && (
+          w.customerContact.toLowerCase() === qLower ||
+          (cleanDigits.length >= 6 && w.customerContact.replace(/\D/g, '').includes(cleanDigits))
+        );
+        return idMatch || slugMatch || contactMatch;
+      });
+
+      if (foundInList) {
+        wish = await getWishByIdOrSlug(foundInList.id);
+      } else {
+        wish = null;
+      }
+    }
+
+    if (wish) {
       res.json({
         success: true,
         found: true,
         wish: {
           id: wish.id,
-          slug: wish.slug,
+          slug: wish.slug || wish.id,
           status: wish.status || 'approved',
           name: wish.name,
           wisherName: wish.wisherName,
@@ -620,7 +650,7 @@ app.get('/api/wishes/track/:query', async (req, res) => {
         }
       });
     } else {
-      res.json({ success: true, found: false, message: 'No wish found matching this tracking ID or contact.' });
+      res.json({ success: true, found: false, message: 'No wish found matching this tracking ID or contact number.' });
     }
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });

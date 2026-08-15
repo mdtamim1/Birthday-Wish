@@ -101,6 +101,12 @@ function initGiftRealtime() {
   const settingsUrl = wishSlug && wishSlug !== 'default' ? `/api/wishes/${wishSlug}` : '/api/settings';
   const eventsUrl = wishSlug && wishSlug !== 'default' ? `/api/events?id=${wishSlug}` : '/api/events';
 
+  // Dynamic back button link
+  const backBtn = document.getElementById('backBtn');
+  if (backBtn) {
+    backBtn.href = (wishSlug && wishSlug !== 'default') ? `/wish/${wishSlug}` : '/';
+  }
+
   fetch(settingsUrl)
     .then(r => r.json())
     .then(json => {
