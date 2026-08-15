@@ -2773,10 +2773,267 @@ function triggerTapFireworks(x, y) {
 // Global click/touch listener for tap burst fireworks
 window.addEventListener('pointerdown', (e) => {
   // Ignore clicks on buttons, inputs, links, or specific UI controls
-  if (e.target.closest('button, input, textarea, a, select, .theme-opt-btn, .nav-dot, .lightbox-card, .reel-card')) {
+  if (e.target.closest('button, input, textarea, a, select, .theme-opt-btn, .nav-dot, .lightbox-card, .reel-card, .custom-modal-card')) {
     return;
   }
   triggerTapFireworks(e.clientX, e.clientY);
 }, { passive: true });
+
+
+// ===== 👑 CUSTOMER WISH REQUEST & STATUS TRACKING CONTROLLER =====
+(function initCustomerWishPortal() {
+  const modalRequest = document.getElementById('wishRequestModal');
+  const modalTrack = document.getElementById('wishTrackModal');
+  const btnOpenRequest = document.getElementById('btnOpenWishRequest');
+  const btnOpenTrack = document.getElementById('btnOpenWishTrack');
+  const btnCloseRequest = document.getElementById('btnCloseWishRequest');
+  const btnCloseTrack = document.getElementById('btnCloseWishTrack');
+
+  // Open / Close Modals
+  function openModal(modal) {
+    if (modal) {
+      modal.style.display = 'flex';
+      document.body.style.overflow = 'hidden';
+    }
+  }
+
+  function closeModal(modal) {
+    if (modal) {
+      modal.style.display = 'none';
+      document.body.style.overflow = '';
+    }
+  }
+
+  btnOpenRequest?.addEventListener('click', () => openModal(modalRequest));
+  btnOpenTrack?.addEventListener('click', () => openModal(modalTrack));
+  btnCloseRequest?.addEventListener('click', () => closeModal(modalRequest));
+  btnCloseTrack?.addEventListener('click', () => closeModal(modalTrack));
+
+  modalRequest?.addEventListener('click', (e) => {
+    if (e.target === modalRequest) closeModal(modalRequest);
+  });
+  modalTrack?.addEventListener('click', (e) => {
+    if (e.target === modalTrack) closeModal(modalTrack);
+  });
+
+  // Photo uploads state for customer form
+  let uploadedMainPhotoUrl = '';
+  let uploadedGalleryPhotoUrls = [];
+
+  const mainPhotoInput = document.getElementById('reqMainPhotoFile');
+  const mainPhotoLabel = document.getElementById('reqMainPhotoLabel');
+  mainPhotoInput?.addEventListener('change', async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    if (mainPhotoLabel) mainPhotoLabel.textContent = 'Uploading...';
+    try {
+      const fd = new FormData();
+      fd.append('file', file);
+      const res = await fetch('/api/upload', { method: 'POST', body: fd });
+      const json = await res.json();
+      if (json.success && json.url) {
+        uploadedMainPhotoUrl = json.url;
+        if (mainPhotoLabel) mainPhotoLabel.textContent = '✓ Photo Selected';
+      }
+    } catch (err) {
+      if (mainPhotoLabel) mainPhotoLabel.textContent = '✓ Selected (Local)';
+    }
+  });
+
+  const galleryPhotosInput = document.getElementById('reqGalleryPhotosFile');
+  const galleryPhotosLabel = document.getElementById('reqGalleryPhotosLabel');
+  galleryPhotosInput?.addEventListener('change', async (e) => {
+    const files = Array.from(e.target.files).slice(0, 4);
+    if (files.length === 0) return;
+    if (galleryPhotosLabel) galleryPhotosLabel.textContent = 'Uploading ' + files.length + ' photos...';
+    try {
+      const fd = new FormData();
+      files.forEach(f => fd.append('files', f));
+      const res = await fetch('/api/upload-multiple', { method: 'POST', body: fd });
+      const json = await res.json();
+      if (json.success && json.urls) {
+        uploadedGalleryPhotoUrls = json.urls;
+        if (galleryPhotosLabel) galleryPhotosLabel.textContent = `✓ ${json.urls.length} Photos Selected`;
+      }
+    } catch (err) {
+      if (galleryPhotosLabel) galleryPhotosLabel.textContent = `✓ ${files.length} Photos Selected`;
+    }
+  });
+
+  // Handle Customer Form Submit
+  const wishForm = document.getElementById('customerWishForm');
+  wishForm?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const btn = document.getElementById('btnSubmitWishReq');
+    if (btn) {
+      btn.disabled = true;
+      btn.textContent = '⏳ Submitting Request...';
+    }
+
+    const payload = {
+      name: document.getElementById('reqRecipientName')?.value.trim() || 'Special Someone',
+      birthdate: document.getElementById('reqBirthdate')?.value || '',
+      specialText: document.getElementById('reqSpecialText')?.value.trim() || 'Wishing You Endless Joy & Happiness 🌸',
+      birthdayNote: document.getElementById('reqBirthdayNote')?.value.trim() || '',
+      wisherName: document.getElementById('reqWisherName')?.value.trim() || 'A Dear Friend',
+      customerContact: document.getElementById('reqCustomerContact')?.value.trim() || '',
+      giftMessage: document.getElementById('reqGiftMessage')?.value.trim() || 'This gift is wrapped with all my heart for you! 💝',
+      photo: uploadedMainPhotoUrl,
+      photos: uploadedGalleryPhotoUrls.length > 0 ? uploadedGalleryPhotoUrls : (uploadedMainPhotoUrl ? [uploadedMainPhotoUrl] : []),
+      showWisher: true
+    };
+
+    try {
+      const res = await fetch('/api/wishes/request', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      const json = await res.json();
+
+      if (json.success && json.trackingId) {
+        // Show Success View
+        const formView = document.getElementById('requestFormView');
+        const successView = document.getElementById('requestSuccessView');
+        const trackingIdEl = document.getElementById('reqSuccessTrackingId');
+        if (formView) formView.style.display = 'none';
+        if (successView) successView.style.display = 'block';
+        if (trackingIdEl) trackingIdEl.textContent = json.trackingId;
+
+        // Copy Tracking ID button
+        document.getElementById('btnCopyTrackingId')?.addEventListener('click', () => {
+          if (navigator.clipboard) {
+            navigator.clipboard.writeText(json.trackingId);
+            alert(`Copied Tracking ID: ${json.trackingId}`);
+          } else {
+            prompt('Copy Tracking ID:', json.trackingId);
+          }
+        });
+
+        // Track from success button
+        document.getElementById('btnTrackNowFromSuccess')?.addEventListener('click', () => {
+          closeModal(modalRequest);
+          const trackInput = document.getElementById('trackSearchInput');
+          if (trackInput) trackInput.value = json.trackingId;
+          openModal(modalTrack);
+          searchWishStatus(json.trackingId);
+        });
+
+        // Trigger confetti celebration!
+        if (typeof confetti === 'function') {
+          confetti({ particleCount: 60, spread: 80, origin: { y: 0.6 } });
+        }
+      } else {
+        alert(json.message || 'Error submitting request. Please try again.');
+      }
+    } catch (err) {
+      alert('Submission error: ' + err.message);
+    } finally {
+      if (btn) {
+        btn.disabled = false;
+        btn.textContent = '🚀 Submit Wish Request';
+      }
+    }
+  });
+
+  // Track Status Search Handler
+  async function searchWishStatus(query) {
+    const q = (query || document.getElementById('trackSearchInput')?.value || '').trim();
+    if (!q) {
+      alert('Please enter a Tracking ID or Phone Number');
+      return;
+    }
+
+    const resultBox = document.getElementById('trackResultBox');
+    const btn = document.getElementById('btnSearchWishStatus');
+    if (btn) btn.textContent = 'Searching...';
+
+    try {
+      const res = await fetch(`/api/wishes/track/${encodeURIComponent(q)}`);
+      const json = await res.json();
+
+      if (json.success && json.found && json.wish) {
+        const w = json.wish;
+        if (resultBox) resultBox.style.display = 'block';
+        document.getElementById('trackResName').textContent = w.name || 'Birthday Person';
+        
+        const badge = document.getElementById('trackStatusBadge');
+        const step1 = document.getElementById('step1');
+        const step2 = document.getElementById('step2');
+        const step3 = document.getElementById('step3');
+        const liveSec = document.getElementById('trackLiveSection');
+        const openLiveBtn = document.getElementById('trackOpenLiveBtn');
+        const copyLiveBtn = document.getElementById('trackCopyLiveBtn');
+
+        if (w.status === 'approved') {
+          if (badge) {
+            badge.textContent = '✅ Approved & Live!';
+            badge.style.background = 'rgba(52,211,153,0.15)';
+            badge.style.borderColor = 'rgba(52,211,153,0.4)';
+            badge.style.color = '#34d399';
+          }
+          if (step2) {
+            step2.style.background = 'rgba(52,211,153,0.15)';
+            step2.style.borderColor = 'rgba(52,211,153,0.4)';
+            step2.style.color = '#34d399';
+            step2.textContent = '✓ 2. Approved';
+          }
+          if (step3) {
+            step3.style.background = 'rgba(56,189,248,0.2)';
+            step3.style.borderColor = 'rgba(56,189,248,0.5)';
+            step3.style.color = '#38bdf8';
+            step3.textContent = '🚀 3. Live & Ready!';
+          }
+          if (liveSec) liveSec.style.display = 'block';
+          const fullLiveUrl = `${window.location.origin}/wish/${w.slug || w.id}`;
+          if (openLiveBtn) openLiveBtn.href = `/wish/${w.slug || w.id}`;
+          if (copyLiveBtn) {
+            copyLiveBtn.onclick = () => {
+              if (navigator.clipboard) {
+                navigator.clipboard.writeText(fullLiveUrl);
+                alert(`Copied Live Wish Link:\n${fullLiveUrl}`);
+              } else {
+                prompt('Copy Live Wish Link:', fullLiveUrl);
+              }
+            };
+          }
+        } else {
+          // Pending review
+          if (badge) {
+            badge.textContent = '⏳ Pending Admin Review';
+            badge.style.background = 'rgba(251,191,36,0.15)';
+            badge.style.borderColor = 'rgba(251,191,36,0.4)';
+            badge.style.color = '#fbbf24';
+          }
+          if (step2) {
+            step2.style.background = 'rgba(251,191,36,0.15)';
+            step2.style.borderColor = 'rgba(251,191,36,0.4)';
+            step2.style.color = '#fbbf24';
+            step2.textContent = '⏳ 2. In Review';
+          }
+          if (step3) {
+            step3.style.background = 'rgba(255,255,255,0.06)';
+            step3.style.borderColor = 'rgba(255,255,255,0.1)';
+            step3.style.color = 'rgba(255,255,255,0.4)';
+            step3.textContent = '🚀 3. Live Page';
+          }
+          if (liveSec) liveSec.style.display = 'none';
+        }
+      } else {
+        alert(json.message || 'No wish found matching this Tracking ID or Contact number.');
+      }
+    } catch (err) {
+      alert('Tracking search error: ' + err.message);
+    } finally {
+      if (btn) btn.textContent = 'Search';
+    }
+  }
+
+  document.getElementById('btnSearchWishStatus')?.addEventListener('click', () => searchWishStatus());
+  document.getElementById('trackSearchInput')?.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') searchWishStatus();
+  });
+})();
+
 
 

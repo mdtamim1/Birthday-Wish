@@ -30,6 +30,11 @@ const SUPABASE_SCHEMA_SQL = `
 -- 1. Create birthday_wishes table
 CREATE TABLE IF NOT EXISTS public.birthday_wishes (
   id TEXT PRIMARY KEY,
+  slug TEXT,
+  status TEXT DEFAULT 'approved',
+  customer_name TEXT,
+  customer_contact TEXT,
+  admin_notes TEXT,
   name TEXT DEFAULT 'Your Name',
   birthdate TEXT,
   special_text TEXT,

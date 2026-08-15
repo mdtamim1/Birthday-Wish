@@ -924,7 +924,364 @@ function showToast(message, type = 'success') {
   checkAuthStatus();
 })();
 
-// Wish Manager Controls
+// ===== ADMIN TAB SWITCHING & WISH DASHBOARD =====
+let currentTab = 'wishesList';
+let activeFilter = 'all';
+let approvingWishId = null;
+
+function switchAdminTab(tabName) {
+  currentTab = tabName;
+  const tabWishes = document.getElementById('tabBtnWishesList');
+  const tabNew = document.getElementById('tabBtnNewWish');
+  const tabEditor = document.getElementById('tabBtnEditor');
+  const viewList = document.getElementById('viewWishList');
+  const viewEditor = document.getElementById('viewCustomizer');
+
+  // Reset tab button styles
+  [tabWishes, tabNew, tabEditor].forEach(btn => {
+    if (btn) {
+      btn.style.background = 'rgba(255,255,255,0.06)';
+      btn.style.border = '1px solid rgba(255,255,255,0.15)';
+      btn.style.boxShadow = 'none';
+      btn.classList.remove('active');
+    }
+  });
+
+  if (tabName === 'wishesList') {
+    if (tabWishes) {
+      tabWishes.style.background = 'linear-gradient(135deg, #a855f7, #ec4899)';
+      tabWishes.style.border = 'none';
+      tabWishes.style.boxShadow = '0 4px 15px rgba(218,94,201,0.3)';
+      tabWishes.classList.add('active');
+    }
+    if (viewList) viewList.style.display = 'block';
+    if (viewEditor) viewEditor.style.display = 'none';
+    fetchAndRenderWishes(activeFilter);
+  } else if (tabName === 'newWish') {
+    if (tabNew) {
+      tabNew.style.background = 'linear-gradient(135deg, #a855f7, #ec4899)';
+      tabNew.style.border = 'none';
+      tabNew.style.boxShadow = '0 4px 15px rgba(218,94,201,0.3)';
+      tabNew.classList.add('active');
+    }
+    if (viewList) viewList.style.display = 'none';
+    if (viewEditor) viewEditor.style.display = 'block';
+    
+    // Create clean new draft
+    const newSlug = `wish-${Date.now().toString().slice(-4)}`;
+    currentWishSlug = newSlug;
+    S = {
+      ...DEFAULT_SETTINGS,
+      name: 'New Birthday Person',
+      birthdayNote: 'Wishing you a magnificent birthday filled with joy and happiness! 🌸',
+      wisherName: S.wisherName || ''
+    };
+    populateForm();
+    if (typeof window.refreshMultiGrid === 'function') window.refreshMultiGrid();
+    const slugInput = document.getElementById('wishSlugInput');
+    if (slugInput) slugInput.value = newSlug;
+    updateWishUrlPreview();
+    document.getElementById('nameInput')?.focus();
+  } else {
+    // Customizer editor
+    if (tabEditor) {
+      tabEditor.style.background = 'linear-gradient(135deg, #a855f7, #ec4899)';
+      tabEditor.style.border = 'none';
+      tabEditor.style.boxShadow = '0 4px 15px rgba(218,94,201,0.3)';
+      tabEditor.classList.add('active');
+    }
+    if (viewList) viewList.style.display = 'none';
+    if (viewEditor) viewEditor.style.display = 'block';
+  }
+}
+
+document.getElementById('tabBtnWishesList')?.addEventListener('click', () => switchAdminTab('wishesList'));
+document.getElementById('tabBtnNewWish')?.addEventListener('click', () => switchAdminTab('newWish'));
+document.getElementById('tabBtnEditor')?.addEventListener('click', () => switchAdminTab('editor'));
+
+// Fetch & Render Wish List
+async function fetchAndRenderWishes(filter = 'all') {
+  activeFilter = filter;
+  const grid = document.getElementById('wishesGrid');
+  if (grid) grid.innerHTML = '<div style="color:rgba(255,255,255,0.6); grid-column:1/-1; text-align:center; padding:30px;">⏳ Loading wishes from database...</div>';
+
+  try {
+    const res = await fetch('/api/wishes/all');
+    const json = await res.json();
+
+    if (json.success && Array.isArray(json.wishes)) {
+      const allWishes = json.wishes;
+      
+      // Update counters
+      const pendingCount = allWishes.filter(w => w.status === 'pending').length;
+      const approvedCount = allWishes.filter(w => w.status !== 'pending' && w.status !== 'rejected').length;
+      
+      const badge = document.getElementById('pendingBadge');
+      if (badge) {
+        if (pendingCount > 0) {
+          badge.textContent = `${pendingCount} Pending`;
+          badge.style.display = 'inline-block';
+        } else {
+          badge.style.display = 'none';
+        }
+      }
+
+      document.getElementById('countAll').textContent = allWishes.length;
+      document.getElementById('countPending').textContent = pendingCount;
+      document.getElementById('countApproved').textContent = approvedCount;
+
+      // Filter list
+      let filtered = allWishes;
+      if (filter === 'pending') filtered = allWishes.filter(w => w.status === 'pending');
+      if (filter === 'approved') filtered = allWishes.filter(w => w.status === 'approved' || (!w.status && w.id));
+
+      if (grid) {
+        if (filtered.length === 0) {
+          grid.innerHTML = '<div style="color:rgba(255,255,255,0.5); grid-column:1/-1; text-align:center; padding:40px; background:rgba(255,255,255,0.03); border-radius:14px;">No wishes found in this category.</div>';
+          return;
+        }
+
+        grid.innerHTML = '';
+        filtered.forEach(w => {
+          const isPending = w.status === 'pending';
+          const card = document.createElement('div');
+          card.style.cssText = `
+            background: linear-gradient(135deg, rgba(26,11,46,0.9), rgba(15,7,30,0.95));
+            border: 1px solid ${isPending ? 'rgba(251,191,36,0.45)' : 'rgba(218,94,201,0.3)'};
+            border-radius: 18px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.35);
+            transition: transform 0.2s, border-color 0.2s;
+          `;
+
+          const liveSlug = w.slug || w.id;
+          const statusBadge = isPending 
+            ? `<span style="background:rgba(251,191,36,0.15); border:1px solid rgba(251,191,36,0.4); color:#fbbf24; font-size:0.72rem; font-weight:800; padding:4px 10px; border-radius:12px; display:inline-flex; align-items:center; gap:4px;">⏳ PENDING APPROVAL</span>`
+            : `<span style="background:rgba(52,211,153,0.15); border:1px solid rgba(52,211,153,0.4); color:#34d399; font-size:0.72rem; font-weight:800; padding:4px 10px; border-radius:12px; display:inline-flex; align-items:center; gap:4px;">✅ LIVE</span>`;
+
+          card.innerHTML = `
+            <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:10px;">
+              <div>
+                <h4 style="margin:0; font-size:1.15rem; font-weight:700; color:#fff;">${escapeHtml(w.name || 'Birthday Wish')}</h4>
+                <span style="font-size:0.75rem; color:rgba(255,255,255,0.45); font-family:monospace;">ID: ${w.id}</span>
+              </div>
+              <div>${statusBadge}</div>
+            </div>
+
+            <div style="font-size:0.82rem; color:rgba(255,255,255,0.75); display:flex; flex-direction:column; gap:4px; background:rgba(0,0,0,0.25); padding:10px; border-radius:10px;">
+              <div><strong style="color:#f472b6;">Wisher:</strong> ${escapeHtml(w.wisherName || 'Friend')}</div>
+              ${w.customerContact ? `<div><strong style="color:#38bdf8;">Contact:</strong> <span style="font-family:monospace;">${escapeHtml(w.customerContact)}</span></div>` : ''}
+              ${w.birthdayNote ? `<div style="color:rgba(255,255,255,0.6); font-style:italic; margin-top:4px; font-size:0.78rem; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;">"${escapeHtml(w.birthdayNote)}"</div>` : ''}
+            </div>
+
+            ${!isPending ? `
+              <div style="font-size:0.78rem; display:flex; align-items:center; justify-content:space-between; background:rgba(56,189,248,0.08); padding:8px 10px; border-radius:8px; border:1px solid rgba(56,189,248,0.2);">
+                <a href="/wish/${liveSlug}" target="_blank" style="color:#38bdf8; text-decoration:none; font-family:monospace; word-break:break-all;">.../wish/${liveSlug}</a>
+                <button type="button" class="btn-copy-card-link" data-url="${window.location.origin}/wish/${liveSlug}" style="background:none; border:none; color:#e2e8f0; cursor:pointer; font-size:0.8rem;" title="Copy Link">📋</button>
+              </div>
+            ` : ''}
+
+            <div style="display:flex; gap:8px; margin-top:auto; padding-top:6px;">
+              ${isPending ? `
+                <button type="button" class="btn-card-approve" data-id="${w.id}" data-name="${escapeHtml(w.name || '')}" data-wisher="${escapeHtml(w.wisherName || '')}" data-contact="${escapeHtml(w.customerContact || '')}" style="flex:1; background:linear-gradient(135deg, #10b981, #059669); border:none; color:#fff; border-radius:10px; padding:9px; font-size:0.82rem; font-weight:700; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:4px; box-shadow:0 4px 15px rgba(16,185,129,0.3);">
+                  ✅ Approve & Make Live
+                </button>
+              ` : ''}
+              <button type="button" class="btn-card-edit" data-id="${w.id}" data-slug="${liveSlug}" style="flex:1; background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.2); color:#fff; border-radius:10px; padding:9px; font-size:0.82rem; font-weight:600; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:4px;">
+                ✏️ Edit
+              </button>
+              ${(w.id !== 'default' && w.id !== 'hasif') ? `
+                <button type="button" class="btn-card-delete" data-id="${w.id}" style="background:rgba(239,68,68,0.15); border:1px solid rgba(239,68,68,0.3); color:#fca5a5; border-radius:10px; padding:9px 12px; font-size:0.82rem; font-weight:600; cursor:pointer;" title="Delete Wish">
+                  🗑️
+                </button>
+              ` : ''}
+            </div>
+          `;
+
+          grid.appendChild(card);
+        });
+
+        attachCardActionListeners();
+      }
+    }
+  } catch (err) {
+    if (grid) grid.innerHTML = '<div style="color:#ef4444; grid-column:1/-1; text-align:center; padding:30px;">Error loading wishes from database.</div>';
+  }
+}
+
+// Helper to escape HTML safely
+function escapeHtml(str) {
+  return String(str || '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+// Attach action listeners on card buttons
+function attachCardActionListeners() {
+  // 1. Approve Button
+  document.querySelectorAll('.btn-card-approve').forEach(btn => {
+    btn.addEventListener('click', function() {
+      const id = this.getAttribute('data-id');
+      const name = this.getAttribute('data-name');
+      const wisher = this.getAttribute('data-wisher');
+      const contact = this.getAttribute('data-contact');
+
+      approvingWishId = id;
+      document.getElementById('approveModalName').textContent = name || id;
+      document.getElementById('approveModalWisher').textContent = wisher || 'Friend';
+      document.getElementById('approveModalContact').textContent = contact || 'N/A';
+
+      const suggestedSlug = (name ? name.toLowerCase().replace(/[^a-z0-9]/g, '-') : id).replace(/-+/g, '-');
+      const slugInput = document.getElementById('approveSlugInput');
+      if (slugInput) slugInput.value = suggestedSlug;
+
+      updateApproveLivePreview(suggestedSlug);
+
+      const modal = document.getElementById('modalApproveWish');
+      if (modal) modal.style.display = 'flex';
+    });
+  });
+
+  // 2. Edit Button
+  document.querySelectorAll('.btn-card-edit').forEach(btn => {
+    btn.addEventListener('click', function() {
+      const id = this.getAttribute('data-id');
+      const slug = this.getAttribute('data-slug') || id;
+      currentWishSlug = slug;
+      switchAdminTab('editor');
+      fetchServerSettings(slug);
+    });
+  });
+
+  // 3. Delete Button
+  document.querySelectorAll('.btn-card-delete').forEach(btn => {
+    btn.addEventListener('click', async function() {
+      const id = this.getAttribute('data-id');
+      if (confirm(`Are you sure you want to permanently delete wish "${id}"?`)) {
+        try {
+          await fetch(`/api/wishes/${id}`, { method: 'DELETE' });
+          showToast(`🗑️ Deleted wish "${id}"`, 'info');
+          fetchAndRenderWishes(activeFilter);
+        } catch (e) {}
+      }
+    });
+  });
+
+  // 4. Copy Card Link
+  document.querySelectorAll('.btn-copy-card-link').forEach(btn => {
+    btn.addEventListener('click', function() {
+      const url = this.getAttribute('data-url');
+      if (navigator.clipboard) {
+        navigator.clipboard.writeText(url).then(() => {
+          showToast(`📋 Copied Link: ${url}`, 'success');
+        });
+      } else {
+        prompt('Copy Live Wish Link:', url);
+      }
+    });
+  });
+}
+
+function updateApproveLivePreview(slug) {
+  const preview = document.getElementById('approveLivePreview');
+  if (preview) {
+    preview.textContent = `${window.location.origin}/wish/${slug || 'custom-name'}`;
+  }
+}
+
+document.getElementById('approveSlugInput')?.addEventListener('input', function() {
+  const clean = this.value.trim().toLowerCase().replace(/[^a-z0-9_-]/g, '-');
+  updateApproveLivePreview(clean);
+});
+
+// Modal Close & Approve Confirmation
+document.getElementById('btnCloseApproveModal')?.addEventListener('click', () => {
+  const modal = document.getElementById('modalApproveWish');
+  if (modal) modal.style.display = 'none';
+});
+
+document.getElementById('btnConfirmApprove')?.addEventListener('click', async () => {
+  if (!approvingWishId) return;
+  const slugInput = document.getElementById('approveSlugInput');
+  const slug = (slugInput ? slugInput.value : approvingWishId).trim().toLowerCase().replace(/[^a-z0-9_-]/g, '-');
+
+  try {
+    const res = await fetch(`/api/wishes/approve/${approvingWishId}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ slug })
+    });
+    const json = await res.json();
+
+    if (json.success) {
+      showToast(`🎉 Approved! Live at: /wish/${slug}`, 'success');
+      const modal = document.getElementById('modalApproveWish');
+      if (modal) modal.style.display = 'none';
+      fetchAndRenderWishes(activeFilter);
+      fetchWishesList();
+    } else {
+      alert(json.message || 'Error approving wish');
+    }
+  } catch (err) {
+    alert('Error: ' + err.message);
+  }
+});
+
+document.getElementById('btnConfirmReject')?.addEventListener('click', async () => {
+  if (!approvingWishId) return;
+  if (confirm('Are you sure you want to reject this wish request?')) {
+    try {
+      await fetch(`/api/wishes/reject/${approvingWishId}`, { method: 'POST' });
+      showToast('❌ Wish request marked as rejected', 'info');
+      const modal = document.getElementById('modalApproveWish');
+      if (modal) modal.style.display = 'none';
+      fetchAndRenderWishes(activeFilter);
+    } catch (e) {}
+  }
+});
+
+// Filter Tab Buttons
+document.querySelectorAll('.wish-filter-btn').forEach(btn => {
+  btn.addEventListener('click', function() {
+    document.querySelectorAll('.wish-filter-btn').forEach(b => {
+      b.style.background = 'rgba(255,255,255,0.06)';
+      b.style.border = '1px solid rgba(255,255,255,0.15)';
+      b.classList.remove('active');
+    });
+    this.style.background = '#da5ec9';
+    this.style.border = 'none';
+    this.classList.add('active');
+
+    const filter = this.getAttribute('data-filter');
+    fetchAndRenderWishes(filter);
+  });
+});
+
+document.getElementById('btnRefreshWishList')?.addEventListener('click', () => {
+  fetchAndRenderWishes(activeFilter);
+  showToast('🔄 Wish list refreshed', 'info');
+});
+
+// SSE Live Stream for Admin Notifications
+if (typeof EventSource !== 'undefined') {
+  try {
+    const adminSSE = new EventSource('/api/events');
+    adminSSE.addEventListener('new_wish_request', (e) => {
+      try {
+        const data = JSON.parse(e.data);
+        showToast(`🔔 New Wish Request from ${data.name || 'Customer'}!`, 'info');
+        fetchAndRenderWishes(activeFilter);
+      } catch (err) {}
+    });
+  } catch (e) {}
+}
+
+// Wish Selector & Slug Controls in Customizer
 document.getElementById('wishSelector')?.addEventListener('change', function() {
   const selectedSlug = this.value;
   if (selectedSlug) {
@@ -938,21 +1295,7 @@ document.getElementById('wishSlugInput')?.addEventListener('input', function() {
 });
 
 document.getElementById('btnNewWish')?.addEventListener('click', () => {
-  const newSlug = `wish-${Date.now().toString().slice(-4)}`;
-  currentWishSlug = newSlug;
-  S = {
-    ...DEFAULT_SETTINGS,
-    name: 'New Birthday Person',
-    birthdayNote: 'Wishing you a magnificent birthday filled with boundless joy, happiness and unforgettable memories! 🌸',
-    wisherName: S.wisherName || ''
-  };
-  populateForm();
-  if (typeof window.refreshMultiGrid === 'function') window.refreshMultiGrid();
-  const slugInput = document.getElementById('wishSlugInput');
-  if (slugInput) slugInput.value = newSlug;
-  updateWishUrlPreview();
-  saveSettings(S);
-  showToast(`✨ Created new wish: "${newSlug}"`, 'success');
+  switchAdminTab('newWish');
 });
 
 document.getElementById('btnCopyWishUrl')?.addEventListener('click', () => {
@@ -991,8 +1334,10 @@ document.getElementById('btnDeleteWish')?.addEventListener('click', async () => 
 document.addEventListener('DOMContentLoaded', () => {
   checkSupabaseStatus();
   fetchWishesList();
+  fetchAndRenderWishes('all');
   fetchServerSettings();
 });
 checkSupabaseStatus();
 fetchWishesList();
+fetchAndRenderWishes('all');
 fetchServerSettings();

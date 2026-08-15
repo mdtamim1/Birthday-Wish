@@ -101,14 +101,24 @@ try {
     );
   `);
 
-  // Create wishes table for multi-wish unique slugs
+  // Create wishes table for multi-wish unique slugs and tracking
   db.exec(`
     CREATE TABLE IF NOT EXISTS wishes (
       id TEXT PRIMARY KEY,
+      slug TEXT,
+      status TEXT DEFAULT 'approved',
+      customer_name TEXT,
+      customer_contact TEXT,
       data TEXT NOT NULL,
       updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
     );
   `);
+
+  // Migration: Ensure columns exist if table was previously created without them
+  try { db.exec("ALTER TABLE wishes ADD COLUMN slug TEXT;"); } catch (e) {}
+  try { db.exec("ALTER TABLE wishes ADD COLUMN status TEXT DEFAULT 'approved';"); } catch (e) {}
+  try { db.exec("ALTER TABLE wishes ADD COLUMN customer_name TEXT;"); } catch (e) {}
+  try { db.exec("ALTER TABLE wishes ADD COLUMN customer_contact TEXT;"); } catch (e) {}
 
   // Check existing SQLite data vs fallback JSON
   const row = db.prepare('SELECT id, data FROM settings WHERE id = 1').get();
@@ -129,8 +139,8 @@ try {
   }
 
   // Seed default and hasif wish slugs in wishes table
-  db.prepare("INSERT OR REPLACE INTO wishes (id, data) VALUES ('default', ?)").run(JSON.stringify(initialSettings));
-  db.prepare("INSERT OR REPLACE INTO wishes (id, data) VALUES ('hasif', ?)").run(JSON.stringify(initialSettings));
+  db.prepare("INSERT OR REPLACE INTO wishes (id, slug, status, data) VALUES ('default', 'default', 'approved', ?)").run(JSON.stringify(initialSettings));
+  db.prepare("INSERT OR REPLACE INTO wishes (id, slug, status, data) VALUES ('hasif', 'hasif', 'approved', ?)").run(JSON.stringify(initialSettings));
 
   // Ensure JSON file is also in sync with initialSettings
   fs.writeFileSync(fallbackJsonPath, JSON.stringify(initialSettings), 'utf8');
@@ -140,39 +150,73 @@ try {
 }
 
 // ===== UNIFIED CLOUD & LOCAL DATA ADAPTER =====
-async function getWishById(slug = 'default') {
-  const cleanId = (slug || 'default').toLowerCase().trim();
+async function getWishByIdOrSlug(query = 'default') {
+  const clean = (query || 'default').trim();
+  const cleanLower = clean.toLowerCase();
 
   // 1. Try Supabase Cloud Database if configured
   if (isSupabaseConfigured() && supabase) {
     try {
-      const { data, error } = await supabase
+      // Look up by id first
+      let { data, error } = await supabase
         .from('birthday_wishes')
         .select('*')
-        .eq('id', cleanId)
+        .eq('id', clean)
         .maybeSingle();
 
-      if (!error && data) {
+      if (!data) {
+        // Look up case-insensitively or by slug inside data JSONB
+        const allRes = await supabase
+          .from('birthday_wishes')
+          .select('*');
+        if (allRes.data) {
+          data = allRes.data.find(item => {
+            const p = item.data && typeof item.data === 'object' ? item.data : {};
+            return (item.id && item.id.toLowerCase() === cleanLower) ||
+                   (p.slug && p.slug.toLowerCase() === cleanLower) ||
+                   (p.id && p.id.toLowerCase() === cleanLower);
+          });
+        }
+      }
+
+      if (data) {
         const payload = data.data && typeof data.data === 'object' ? data.data : data;
-        return { ...DEFAULT_SETTINGS, ...payload, id: cleanId };
+        return { 
+          ...DEFAULT_SETTINGS, 
+          ...payload, 
+          id: data.id, 
+          slug: payload.slug || data.id, 
+          status: payload.status || 'approved',
+          customerName: payload.customerName || data.customer_name || '',
+          customerContact: payload.customerContact || data.customer_contact || ''
+        };
       }
     } catch (err) {
       console.warn('Supabase fetch error, falling back to local:', err.message);
     }
   }
 
-  // 2. Local SQLite lookup
+  // 2. Local SQLite lookup (by slug OR by id case-insensitively)
   if (db) {
     try {
-      const row = db.prepare('SELECT data FROM wishes WHERE id = ?').get(cleanId);
+      let row = db.prepare('SELECT id, slug, status, customer_name, customer_contact, data FROM wishes WHERE LOWER(slug) = LOWER(?) OR LOWER(id) = LOWER(?)').get(clean, clean);
       if (row && row.data) {
-        return { ...DEFAULT_SETTINGS, ...JSON.parse(row.data), id: cleanId };
+        const parsed = JSON.parse(row.data);
+        return { 
+          ...DEFAULT_SETTINGS, 
+          ...parsed, 
+          id: row.id, 
+          slug: row.slug || row.id, 
+          status: row.status || 'approved',
+          customerName: row.customer_name || '',
+          customerContact: row.customer_contact || ''
+        };
       }
       // If default, check legacy table
-      if (cleanId === 'default') {
+      if (cleanLower === 'default') {
         const legacyRow = db.prepare('SELECT data FROM settings WHERE id = 1').get();
         if (legacyRow && legacyRow.data) {
-          return { ...DEFAULT_SETTINGS, ...JSON.parse(legacyRow.data), id: 'default' };
+          return { ...DEFAULT_SETTINGS, ...JSON.parse(legacyRow.data), id: 'default', slug: 'default', status: 'approved' };
         }
       }
     } catch (e) {
@@ -181,20 +225,25 @@ async function getWishById(slug = 'default') {
   }
 
   // 3. Fallback to settings.json
-  if (cleanId === 'default') {
+  if (cleanLower === 'default' || cleanLower === 'hasif') {
     const jsonSettings = readSettingsFromJson();
     if (jsonSettings) {
-      return { ...DEFAULT_SETTINGS, ...jsonSettings, id: 'default' };
+      return { ...DEFAULT_SETTINGS, ...jsonSettings, id: 'hasif', slug: 'hasif', status: 'approved' };
     }
   }
 
-  return { ...DEFAULT_SETTINGS, id: cleanId };
+  return { ...DEFAULT_SETTINGS, id: clean, slug: clean, status: 'approved' };
 }
 
-async function saveWishById(slug = 'default', newSettings = {}) {
-  const cleanId = (slug || 'default').toLowerCase().trim();
-  const current = await getWishById(cleanId);
-  const merged = { ...DEFAULT_SETTINGS, ...current, ...newSettings, id: cleanId };
+async function saveWishRecord(wishData) {
+  const rawId = wishData.id || wishData.slug || `BW-${Math.floor(1000 + Math.random() * 9000)}`;
+  const id = rawId.trim();
+  const slug = (wishData.slug || id).toLowerCase().trim().replace(/[^a-zA-Z0-9_-]/g, '-');
+  const status = wishData.status || 'approved';
+  const customerName = wishData.customerName || wishData.customer_name || '';
+  const customerContact = wishData.customerContact || wishData.customer_contact || '';
+
+  const merged = { ...DEFAULT_SETTINGS, ...wishData, id, slug, status, customerName, customerContact };
   const jsonStr = JSON.stringify(merged);
 
   // 1. Save to Supabase Cloud Database
@@ -203,7 +252,7 @@ async function saveWishById(slug = 'default', newSettings = {}) {
       const { error } = await supabase
         .from('birthday_wishes')
         .upsert({
-          id: cleanId,
+          id,
           name: merged.name || 'Your Name',
           birthdate: merged.birthdate || '',
           special_text: merged.specialText || '',
@@ -230,11 +279,8 @@ async function saveWishById(slug = 'default', newSettings = {}) {
           updated_at: new Date().toISOString()
         }, { onConflict: 'id' });
 
-      if (error) {
-        console.warn('Supabase save error:', error.message);
-      } else {
-        console.log(`⚡ Wish "${cleanId}" saved permanently to Supabase Cloud Database`);
-      }
+      if (error) console.warn('Supabase save warning:', error.message);
+      else console.log(`⚡ Wish "${id}" (${slug}) saved to Supabase Cloud Database [Status: ${status}]`);
     } catch (err) {
       console.warn('Supabase upsert failed:', err.message);
     }
@@ -244,11 +290,18 @@ async function saveWishById(slug = 'default', newSettings = {}) {
   if (db) {
     try {
       db.prepare(`
-        INSERT INTO wishes (id, data, updated_at) VALUES (?, ?, CURRENT_TIMESTAMP)
-        ON CONFLICT(id) DO UPDATE SET data = excluded.data, updated_at = CURRENT_TIMESTAMP
-      `).run(cleanId, jsonStr);
+        INSERT INTO wishes (id, slug, status, customer_name, customer_contact, data, updated_at) 
+        VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+        ON CONFLICT(id) DO UPDATE SET 
+          slug = excluded.slug, 
+          status = excluded.status, 
+          customer_name = excluded.customer_name, 
+          customer_contact = excluded.customer_contact, 
+          data = excluded.data, 
+          updated_at = CURRENT_TIMESTAMP
+      `).run(id, slug, status, customerName, customerContact, jsonStr);
 
-      if (cleanId === 'default') {
+      if (id === 'default' || slug === 'default') {
         db.prepare(`
           INSERT INTO settings (id, data, updated_at) VALUES (1, ?, CURRENT_TIMESTAMP)
           ON CONFLICT(id) DO UPDATE SET data = excluded.data, updated_at = CURRENT_TIMESTAMP
@@ -260,7 +313,7 @@ async function saveWishById(slug = 'default', newSettings = {}) {
   }
 
   // 3. Backup settings.json for default
-  if (cleanId === 'default') {
+  if (id === 'default' || slug === 'default' || id === 'hasif') {
     try {
       fs.writeFileSync(fallbackJsonPath, jsonStr, 'utf8');
     } catch (e) {}
@@ -269,26 +322,41 @@ async function saveWishById(slug = 'default', newSettings = {}) {
   return merged;
 }
 
-async function listAllWishes() {
+async function listAllWishes(filterStatus = 'all') {
   const wishes = [];
   const seenIds = new Set();
 
   // 1. Fetch from Supabase
   if (isSupabaseConfigured() && supabase) {
     try {
-      const { data, error } = await supabase
+      let query = supabase
         .from('birthday_wishes')
-        .select('id, name, wisher_name, updated_at, data')
+        .select('*')
         .order('updated_at', { ascending: false });
+
+      if (filterStatus && filterStatus !== 'all') {
+        query = query.eq('status', filterStatus);
+      }
+
+      const { data, error } = await query;
 
       if (!error && data) {
         data.forEach(item => {
           seenIds.add(item.id);
+          const p = item.data && typeof item.data === 'object' ? item.data : {};
           wishes.push({
             id: item.id,
-            name: item.name || (item.data && item.data.name) || 'Birthday Wish',
-            wisherName: item.wisher_name || (item.data && item.data.wisherName) || '',
-            updatedAt: item.updated_at
+            slug: item.slug || item.id,
+            status: item.status || 'approved',
+            name: item.name || p.name || 'Birthday Wish',
+            wisherName: item.wisher_name || p.wisherName || '',
+            customerName: item.customer_name || p.customerName || '',
+            customerContact: item.customer_contact || p.customerContact || '',
+            birthdayNote: item.birthday_note || p.birthdayNote || '',
+            photo: item.photo || p.photo || '',
+            photos: item.photos || p.photos || [],
+            updatedAt: item.updated_at,
+            createdAt: item.created_at
           });
         });
       }
@@ -300,7 +368,15 @@ async function listAllWishes() {
   // 2. Fetch from Local SQLite
   if (db) {
     try {
-      const rows = db.prepare('SELECT id, data, updated_at FROM wishes ORDER BY updated_at DESC').all();
+      let sql = 'SELECT id, slug, status, customer_name, customer_contact, data, updated_at FROM wishes';
+      const params = [];
+      if (filterStatus && filterStatus !== 'all') {
+        sql += ' WHERE status = ?';
+        params.push(filterStatus);
+      }
+      sql += ' ORDER BY updated_at DESC';
+
+      const rows = db.prepare(sql).all(...params);
       rows.forEach(r => {
         if (!seenIds.has(r.id)) {
           seenIds.add(r.id);
@@ -308,35 +384,43 @@ async function listAllWishes() {
           try { parsed = JSON.parse(r.data); } catch (e) {}
           wishes.push({
             id: r.id,
+            slug: r.slug || r.id,
+            status: r.status || 'approved',
             name: parsed.name || 'Birthday Wish',
             wisherName: parsed.wisherName || '',
-            updatedAt: r.updated_at
+            customerName: r.customer_name || parsed.customerName || '',
+            customerContact: r.customer_contact || parsed.customerContact || '',
+            birthdayNote: parsed.birthdayNote || '',
+            photo: parsed.photo || '',
+            photos: parsed.photos || [],
+            updatedAt: r.updated_at,
+            createdAt: r.updated_at
           });
         }
       });
     } catch (e) {}
   }
 
-  if (wishes.length === 0) {
-    wishes.push({ id: 'default', name: 'Default Wish', wisherName: '', updatedAt: new Date().toISOString() });
+  if (wishes.length === 0 && filterStatus === 'all') {
+    wishes.push({ id: 'hasif', slug: 'hasif', status: 'approved', name: 'Hasif Hossen', wisherName: 'Md Tamim', updatedAt: new Date().toISOString() });
   }
 
   return wishes;
 }
 
-async function deleteWishById(slug) {
-  const cleanId = (slug || '').toLowerCase().trim();
-  if (!cleanId || cleanId === 'default') return false;
+async function deleteWishById(idOrSlug) {
+  const clean = (idOrSlug || '').toLowerCase().trim();
+  if (!clean || clean === 'default' || clean === 'hasif') return false;
 
   if (isSupabaseConfigured() && supabase) {
     try {
-      await supabase.from('birthday_wishes').delete().eq('id', cleanId);
+      await supabase.from('birthday_wishes').delete().or(`id.eq.${clean},slug.eq.${clean}`);
     } catch (e) {}
   }
 
   if (db) {
     try {
-      db.prepare('DELETE FROM wishes WHERE id = ?').run(cleanId);
+      db.prepare('DELETE FROM wishes WHERE id = ? OR slug = ?').run(clean, clean);
     } catch (e) {}
   }
 
@@ -367,7 +451,7 @@ app.get('/api/events', async (req, res) => {
   });
 
   const wishId = req.query.id || 'default';
-  const current = await getWishById(wishId);
+  const current = await getWishByIdOrSlug(wishId);
   res.write(`event: initial\ndata: ${JSON.stringify(current)}\n\n`);
 
   const client = { id: Date.now() + Math.random(), res, wishId };
@@ -420,8 +504,6 @@ async function processAndSaveFile(file) {
           console.log('⚡ File uploaded to Supabase Storage CDN:', publicUrlData.publicUrl);
           return { url: publicUrlData.publicUrl, filename, isCloud: true };
         }
-      } else {
-        console.warn('Supabase storage upload error:', error ? error.message : 'Unknown error');
       }
     } catch (storageErr) {
       console.warn('Supabase storage exception:', storageErr.message);
@@ -479,61 +561,163 @@ app.post('/api/upload-multiple', upload.array('files', 12), async (req, res) => 
 
 // ===== REST API ENDPOINTS =====
 
-// 1. Get Settings / Wish (supports ?id=slug)
-app.get('/api/settings', async (req, res) => {
-  const wishId = req.query.id || 'default';
-  const settings = await getWishById(wishId);
-  res.json({ success: true, data: settings, wishId });
-});
-
-// 2. Save Settings / Wish
-app.post('/api/settings', async (req, res) => {
+// 1. PUBLIC: Customer Submit Wish Request
+app.post('/api/wishes/request', async (req, res) => {
   try {
-    const incoming = req.body;
-    if (!incoming || typeof incoming !== 'object') {
-      return res.status(400).json({ success: false, error: 'Invalid settings payload' });
-    }
+    const incoming = req.body || {};
+    const trackingId = `BW-${Math.floor(1000 + Math.random() * 9000)}`;
+    const newWish = {
+      ...DEFAULT_SETTINGS,
+      ...incoming,
+      id: trackingId,
+      slug: (incoming.name ? incoming.name.toLowerCase().replace(/[^a-z0-9]/g, '-') : trackingId),
+      status: 'pending',
+      customerName: incoming.customerName || incoming.wisherName || 'Customer',
+      customerContact: incoming.customerContact || ''
+    };
 
-    const wishId = incoming.id || req.query.id || 'default';
-    const saved = await saveWishById(wishId, incoming);
+    const saved = await saveWishRecord(newWish);
 
-    // Broadcast live SSE update
-    broadcastLiveUpdate('settings_updated', saved);
+    // Notify Admin live
+    broadcastLiveUpdate('new_wish_request', {
+      trackingId,
+      name: saved.name,
+      wisherName: saved.wisherName,
+      customerContact: saved.customerContact
+    });
 
     res.json({
       success: true,
-      message: 'Wish saved permanently to Supabase Cloud Database',
-      data: saved,
-      wishId
+      trackingId,
+      status: 'pending',
+      message: 'Your birthday wish request has been submitted for review! Keep your tracking ID safe.',
+      data: saved
     });
   } catch (err) {
-    console.error('Save settings error:', err);
+    console.error('Wish request submission error:', err);
     res.status(500).json({ success: false, error: err.message });
   }
 });
 
-// 3. Multi-Wish Management Endpoints
-app.get('/api/wishes', async (req, res) => {
+// 2. PUBLIC: Customer Track Wish Status
+app.get('/api/wishes/track/:query', async (req, res) => {
   try {
-    const wishes = await listAllWishes();
-    res.json({ success: true, wishes });
+    const q = (req.params.query || '').trim().toLowerCase();
+    const wish = await getWishByIdOrSlug(q);
+
+    if (wish && (wish.id.toLowerCase() === q || (wish.slug && wish.slug.toLowerCase() === q) || (wish.customerContact && wish.customerContact.toLowerCase() === q))) {
+      res.json({
+        success: true,
+        found: true,
+        wish: {
+          id: wish.id,
+          slug: wish.slug,
+          status: wish.status || 'approved',
+          name: wish.name,
+          wisherName: wish.wisherName,
+          liveUrl: wish.status === 'approved' ? `/wish/${wish.slug || wish.id}` : null,
+          updatedAt: wish.updated_at
+        }
+      });
+    } else {
+      res.json({ success: true, found: false, message: 'No wish found matching this tracking ID or contact.' });
+    }
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
   }
 });
 
+// 3. ADMIN: List all wishes (with status filtering: all, pending, approved)
+app.get(['/api/wishes', '/api/wishes/all'], async (req, res) => {
+  try {
+    const statusFilter = req.query.status || 'all';
+    const wishes = await listAllWishes(statusFilter);
+    res.json({ success: true, wishes, filter: statusFilter });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// 4. ADMIN: Approve Wish and Assign Live Slug
+app.post('/api/wishes/approve/:id', async (req, res) => {
+  try {
+    const id = req.params.id;
+    const { slug } = req.body || {};
+    const existing = await getWishByIdOrSlug(id);
+    
+    const assignedSlug = (slug || existing.slug || existing.name?.toLowerCase().replace(/[^a-z0-9]/g, '-') || id).toLowerCase().trim();
+
+    existing.status = 'approved';
+    existing.slug = assignedSlug;
+
+    const saved = await saveWishRecord(existing);
+    broadcastLiveUpdate('wish_approved', { id, slug: assignedSlug });
+
+    res.json({
+      success: true,
+      message: `Wish approved and live at /wish/${assignedSlug}`,
+      data: saved,
+      liveUrl: `/wish/${assignedSlug}`
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// 5. ADMIN: Reject Wish
+app.post('/api/wishes/reject/:id', async (req, res) => {
+  try {
+    const id = req.params.id;
+    const existing = await getWishByIdOrSlug(id);
+    existing.status = 'rejected';
+    const saved = await saveWishRecord(existing);
+
+    res.json({ success: true, message: 'Wish marked as rejected', data: saved });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// 6. ADMIN / SYSTEM: Create Direct Approved Wish
+app.post('/api/wishes/create', async (req, res) => {
+  try {
+    const incoming = req.body || {};
+    const slug = (incoming.slug || incoming.id || incoming.name?.toLowerCase().replace(/[^a-z0-9]/g, '-') || `wish-${Date.now().toString().slice(-4)}`).toLowerCase().trim();
+    const newWish = {
+      ...DEFAULT_SETTINGS,
+      ...incoming,
+      id: slug,
+      slug: slug,
+      status: 'approved'
+    };
+
+    const saved = await saveWishRecord(newWish);
+    broadcastLiveUpdate('settings_updated', saved);
+
+    res.json({ success: true, message: 'New wish created and live', data: saved, liveUrl: `/wish/${slug}` });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// 7. Get Specific Wish (by slug or ID)
 app.get('/api/wishes/:id', async (req, res) => {
   try {
-    const wish = await getWishById(req.params.id);
+    const wish = await getWishByIdOrSlug(req.params.id);
     res.json({ success: true, data: wish });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
   }
 });
 
+// 8. Update Wish
 app.post('/api/wishes/:id', async (req, res) => {
   try {
-    const saved = await saveWishById(req.params.id, req.body);
+    const id = req.params.id;
+    const incoming = req.body || {};
+    const existing = await getWishByIdOrSlug(id);
+    const updated = { ...existing, ...incoming, id: existing.id || id };
+    const saved = await saveWishRecord(updated);
     broadcastLiveUpdate('settings_updated', saved);
     res.json({ success: true, data: saved });
   } catch (err) {
@@ -541,6 +725,7 @@ app.post('/api/wishes/:id', async (req, res) => {
   }
 });
 
+// 9. Delete Wish
 app.delete('/api/wishes/:id', async (req, res) => {
   try {
     const success = await deleteWishById(req.params.id);
@@ -550,7 +735,26 @@ app.delete('/api/wishes/:id', async (req, res) => {
   }
 });
 
-// 4. Supabase Status & SQL Schema Helper
+// 10. Legacy settings get/post compatibility
+app.get('/api/settings', async (req, res) => {
+  const wishId = req.query.id || 'default';
+  const settings = await getWishByIdOrSlug(wishId);
+  res.json({ success: true, data: settings, wishId });
+});
+
+app.post('/api/settings', async (req, res) => {
+  try {
+    const incoming = req.body;
+    const wishId = incoming.id || req.query.id || 'default';
+    const saved = await saveWishRecord({ ...incoming, id: wishId });
+    broadcastLiveUpdate('settings_updated', saved);
+    res.json({ success: true, data: saved });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// 11. Supabase Status & SQL Schema Helper
 app.get('/api/supabase-status', (req, res) => {
   res.json({
     configured: isSupabaseConfigured(),
@@ -559,17 +763,13 @@ app.get('/api/supabase-status', (req, res) => {
   });
 });
 
-// 5. Reset Settings
+// 12. Reset Settings
 app.post('/api/reset', async (req, res) => {
   try {
     const wishId = req.query.id || 'default';
-    const saved = await saveWishById(wishId, DEFAULT_SETTINGS);
+    const saved = await saveWishRecord({ ...DEFAULT_SETTINGS, id: wishId, slug: wishId, status: 'approved' });
     broadcastLiveUpdate('settings_updated', saved);
-    res.json({
-      success: true,
-      message: 'Settings reset to defaults',
-      data: saved
-    });
+    res.json({ success: true, message: 'Settings reset to defaults', data: saved });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
   }
@@ -617,4 +817,3 @@ app.listen(PORT, () => {
   --------------------------------------------------
   `);
 });
-
