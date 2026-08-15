@@ -202,22 +202,54 @@ async function doSave() {
 document.getElementById('saveBtn')?.addEventListener('click', doSave);
 document.getElementById('saveBtnTop')?.addEventListener('click', doSave);
 
+// Debounce timer for smooth auto-saving
+let autoSaveTimer = null;
+function triggerAutoSave() {
+  const statusEl = document.getElementById('saveStatus');
+  if (statusEl) {
+    statusEl.textContent = '● Saving...';
+    statusEl.style.color = '#fbbf24';
+  }
+  clearTimeout(autoSaveTimer);
+  autoSaveTimer = setTimeout(async () => {
+    S = collectFormData();
+    await saveSettings(S);
+    if (statusEl) {
+      statusEl.textContent = '✓ Saved & Synced';
+      statusEl.style.color = '#34d399';
+      setTimeout(() => { if (statusEl.textContent.includes('Synced')) statusEl.textContent = ''; }, 3000);
+    }
+  }, 600);
+}
+
 // ===== SHAREABLE WISH LINK GENERATOR =====
 function generateShareableLink() {
   S = collectFormData();
   saveSettings(S);
 
   const sharePayload = {
-    name: S.name,
-    birthdate: S.birthdate,
-    specialText: S.specialText,
-    birthdayNote: S.birthdayNote,
-    wisherName: S.wisherName,
-    showWisher: S.showWisher,
-    giftMessage: S.giftMessage,
-    musicUrl: S.musicUrl,
-    themeId: S.themeId,
-    showBirthdate: S.showBirthdate
+    name: S.name || '',
+    birthdate: S.birthdate || '',
+    specialText: S.specialText || '',
+    birthdayNote: S.birthdayNote || '',
+    wisherName: S.wisherName || '',
+    showWisher: !!S.showWisher,
+    giftMessage: S.giftMessage || '',
+    giftPhoto: S.giftPhoto || '',
+    photo: S.photo || '',
+    photos: Array.isArray(S.photos) ? S.photos : [],
+    musicUrl: S.musicUrl || '',
+    musicEnabled: S.musicEnabled !== false,
+    themeId: S.themeId || 'galaxy-violet',
+    themeColor1: S.themeColor1 || '#da5ec9',
+    themeColor2: S.themeColor2 || '#ec4899',
+    themeAccent: S.themeAccent || '#fd8ae0',
+    showBirthdate: S.showBirthdate !== false,
+    showFloatingMemories: S.showFloatingMemories !== false,
+    showGift: S.showGift !== false,
+    showVoiceNote: S.showVoiceNote !== false,
+    voiceTitle: S.voiceTitle || '',
+    voiceUrl: S.voiceUrl || ''
   };
 
   const encoded = btoa(unescape(encodeURIComponent(JSON.stringify(sharePayload))));
@@ -226,7 +258,7 @@ function generateShareableLink() {
 
   if (navigator.clipboard && navigator.clipboard.writeText) {
     navigator.clipboard.writeText(fullUrl).then(() => {
-      showToast('📋 Shareable Wish Link copied to clipboard!', 'success');
+      showToast('📋 Complete Shareable Wish Link copied to clipboard!', 'success');
     }).catch(() => {
       prompt('Copy your customized wish link:', fullUrl);
     });
@@ -238,15 +270,10 @@ function generateShareableLink() {
 const shareBtn = document.getElementById('shareWishLinkBtn');
 if (shareBtn) shareBtn.addEventListener('click', generateShareableLink);
 
-// Auto-save hint on input
-document.querySelectorAll('input, textarea').forEach(el => {
-  el.addEventListener('input', () => {
-    const statusEl = document.getElementById('saveStatus');
-    if (statusEl) {
-      statusEl.textContent = '● Unsaved changes';
-      statusEl.style.color = '#fbbf24';
-    }
-  });
+// Auto-save on input and change
+document.querySelectorAll('input, textarea, select').forEach(el => {
+  el.addEventListener('input', triggerAutoSave);
+  el.addEventListener('change', triggerAutoSave);
 });
 
 // Reset to Defaults

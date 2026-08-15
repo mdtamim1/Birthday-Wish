@@ -18,7 +18,14 @@ const uploadsDir = path.join(__dirname, 'uploads');
 if (!fs.existsSync(uploadsDir)) {
   fs.mkdirSync(uploadsDir, { recursive: true });
 }
-app.use('/uploads', express.static(uploadsDir));
+// Serve uploads with explicit CORS and caching headers for Canvas export compatibility
+app.use('/uploads', cors(), express.static(uploadsDir, {
+  setHeaders: (res) => {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
+    res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+  }
+}));
 
 // Ensure data directory exists
 const dataDir = path.join(__dirname, 'data');
@@ -58,6 +65,24 @@ const DEFAULT_SETTINGS = {
   adminPassword: '01905'
 };
 
+const fallbackJsonPath = path.join(dataDir, 'settings.json');
+
+// Helper to safely read JSON file
+function readSettingsFromJson() {
+  try {
+    if (fs.existsSync(fallbackJsonPath)) {
+      const fileData = fs.readFileSync(fallbackJsonPath, 'utf8');
+      const parsed = JSON.parse(fileData);
+      if (parsed && typeof parsed === 'object') {
+        return parsed;
+      }
+    }
+  } catch (e) {
+    console.error('Error reading JSON settings:', e.message);
+  }
+  return null;
+}
+
 // ===== DATABASE INITIALIZATION (SQLite) =====
 let db;
 try {
@@ -74,44 +99,61 @@ try {
     );
   `);
 
-  // Check if initial row exists
+  // Check existing SQLite data vs fallback JSON
   const row = db.prepare('SELECT id, data FROM settings WHERE id = 1').get();
-  if (!row) {
+  const jsonSettings = readSettingsFromJson();
+
+  let initialSettings = { ...DEFAULT_SETTINGS };
+
+  if (row && row.data) {
+    try {
+      const dbParsed = JSON.parse(row.data);
+      initialSettings = { ...DEFAULT_SETTINGS, ...dbParsed };
+    } catch (e) {}
+  } else if (jsonSettings) {
+    initialSettings = { ...DEFAULT_SETTINGS, ...jsonSettings };
+    // Seed SQLite from JSON
+    db.prepare('INSERT INTO settings (id, data) VALUES (1, ?)').run(JSON.stringify(initialSettings));
+  } else {
+    // Both empty, insert default
     db.prepare('INSERT INTO settings (id, data) VALUES (1, ?)').run(JSON.stringify(DEFAULT_SETTINGS));
   }
-  console.log('✅ SQLite Database connected & initialized');
+
+  // Ensure JSON file is also in sync with initialSettings
+  fs.writeFileSync(fallbackJsonPath, JSON.stringify(initialSettings), 'utf8');
+  console.log('✅ SQLite & JSON storage synchronized & initialized');
 } catch (err) {
   console.error('⚠️ SQLite Init Error, falling back to JSON storage:', err.message);
 }
 
-// Database helper functions
-const fallbackJsonPath = path.join(dataDir, 'settings.json');
-
 function getDbSettings() {
+  let settings = null;
+
   if (db) {
     try {
       const row = db.prepare('SELECT data FROM settings WHERE id = 1').get();
       if (row && row.data) {
-        return { ...DEFAULT_SETTINGS, ...JSON.parse(row.data) };
+        settings = JSON.parse(row.data);
       }
     } catch (e) {
       console.error('Error reading from DB:', e);
     }
   }
 
-  // Fallback to JSON file
-  try {
-    if (fs.existsSync(fallbackJsonPath)) {
-      const fileData = fs.readFileSync(fallbackJsonPath, 'utf8');
-      return { ...DEFAULT_SETTINGS, ...JSON.parse(fileData) };
+  // Fallback to JSON if SQLite failed or returned empty
+  if (!settings) {
+    const jsonSettings = readSettingsFromJson();
+    if (jsonSettings) {
+      settings = jsonSettings;
     }
-  } catch (e) {}
+  }
 
-  return { ...DEFAULT_SETTINGS };
+  return { ...DEFAULT_SETTINGS, ...(settings || {}) };
 }
 
 function saveDbSettings(newSettings) {
-  const merged = { ...DEFAULT_SETTINGS, ...newSettings };
+  const current = getDbSettings();
+  const merged = { ...DEFAULT_SETTINGS, ...current, ...newSettings };
   const jsonStr = JSON.stringify(merged);
 
   if (db) {
@@ -125,10 +167,12 @@ function saveDbSettings(newSettings) {
     }
   }
 
-  // Also write backup JSON file
+  // Always write backup JSON file atomically
   try {
     fs.writeFileSync(fallbackJsonPath, jsonStr, 'utf8');
-  } catch (e) {}
+  } catch (e) {
+    console.error('Error writing settings.json backup:', e);
+  }
 
   return merged;
 }

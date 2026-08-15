@@ -18,14 +18,30 @@ function loadSettings() {
   let result = { ...DEFAULT };
   try {
     const s = localStorage.getItem('birthdaySettings');
-    if (s) result = { ...result, ...JSON.parse(s) };
+    if (s) {
+      const parsed = JSON.parse(s);
+      if (parsed && typeof parsed === 'object') result = { ...result, ...parsed };
+    }
   } catch (e) {}
 
   try {
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.has('data')) {
-      const decoded = JSON.parse(decodeURIComponent(escape(atob(urlParams.get('data')))));
-      result = { ...result, ...decoded };
+      const raw = urlParams.get('data');
+      if (raw) {
+        const decoded = JSON.parse(decodeURIComponent(escape(atob(raw))));
+        if (decoded && typeof decoded === 'object') {
+          const existingPhotos = (result.photos && result.photos.length > 0) ? result.photos : null;
+          const existingGiftPhoto = result.giftPhoto || null;
+          result = { ...result, ...decoded };
+          if ((!decoded.photos || decoded.photos.length === 0) && existingPhotos) {
+            result.photos = existingPhotos;
+          }
+          if (!decoded.giftPhoto && existingGiftPhoto) {
+            result.giftPhoto = existingGiftPhoto;
+          }
+        }
+      }
     } else {
       if (urlParams.has('name')) result.name = urlParams.get('name');
       if (urlParams.has('giftMessage')) result.giftMessage = urlParams.get('giftMessage');
