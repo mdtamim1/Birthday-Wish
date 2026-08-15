@@ -2452,7 +2452,7 @@ async function generateRoyalSouvenirCard() {
     ctx.restore();
 
     // 9. Special Subtitle / Date Pill
-    const birthdateFormatted = S.birthdate ? formatDate(S.birthdate) : 'A Day of Boundless Joy & Magic';
+    const birthdateFormatted = S.birthdate ? formatCardDate(S.birthdate) : 'A Day of Boundless Joy & Magic';
     ctx.save();
     const pillW = Math.min(740, ctx.measureText(birthdateFormatted).width + 120);
     const pillH = 42;
@@ -2702,6 +2702,35 @@ async function generateRoyalSouvenirCard() {
       btn.innerHTML = origBtnHTML;
     }
   }
+}
+
+// Helper: Date Formatter for Keepsake Card
+function formatCardDate(dStr) {
+  if (!dStr) return 'A Day of Boundless Joy & Magic';
+  try {
+    const d = new Date(dStr);
+    if (!isNaN(d.getTime())) {
+      const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+      return `${months[d.getMonth()]} ${d.getDate()}, ${d.getFullYear()}`;
+    }
+  } catch (e) {}
+  return String(dStr);
+}
+
+// Helper: Live Toast Notification
+function showLiveToast(msg) {
+  let toast = document.querySelector('.live-sync-toast');
+  if (!toast) {
+    toast = document.createElement('div');
+    toast.className = 'live-sync-toast';
+    document.body.appendChild(toast);
+  }
+  toast.innerHTML = `<span class="live-sync-indicator"></span> <span>${msg}</span>`;
+  toast.classList.add('show');
+  clearTimeout(toast._timer);
+  toast._timer = setTimeout(() => {
+    toast.classList.remove('show');
+  }, 4000);
 }
 
 // Helper: Round Rectangle for Canvas
