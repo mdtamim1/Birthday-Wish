@@ -34,6 +34,8 @@ const DEFAULT_SETTINGS = {
   adminPassword: '01905',
 };
 
+let currentWishSlug = 'hasif';
+
 function loadSettings() {
   try {
     const s = localStorage.getItem('birthdaySettings');
@@ -43,10 +45,80 @@ function loadSettings() {
 
 let S = loadSettings();
 
-// Fetch latest settings from server on boot
-async function fetchServerSettings() {
+// Check Supabase Cloud Connection
+async function checkSupabaseStatus() {
   try {
-    const res = await fetch('/api/settings');
+    const res = await fetch('/api/supabase-status');
+    if (res.ok) {
+      const json = await res.json();
+      const statusText = document.getElementById('supabaseStatusText');
+      const badge = document.getElementById('supabaseBadge');
+      if (json.configured) {
+        if (statusText) statusText.textContent = '⚡ Supabase Cloud Connected';
+        if (badge) {
+          badge.style.background = 'rgba(52,211,153,0.15)';
+          badge.style.borderColor = 'rgba(52,211,153,0.45)';
+          badge.style.color = '#34d399';
+        }
+      } else {
+        if (statusText) statusText.textContent = '📁 Local Storage (Set SUPABASE_URL in .env to connect)';
+        if (badge) {
+          badge.style.background = 'rgba(251,191,36,0.12)';
+          badge.style.borderColor = 'rgba(251,191,36,0.4)';
+          badge.style.color = '#fbbf24';
+        }
+      }
+    }
+  } catch (e) {}
+}
+
+// Fetch all wishes for the dropdown
+async function fetchWishesList() {
+  try {
+    const res = await fetch('/api/wishes');
+    if (res.ok) {
+      const json = await res.json();
+      if (json.success && json.wishes) {
+        populateWishSelector(json.wishes);
+      }
+    }
+  } catch (e) {}
+}
+
+function populateWishSelector(wishes) {
+  const selector = document.getElementById('wishSelector');
+  if (!selector) return;
+  selector.innerHTML = '';
+  wishes.forEach(w => {
+    const opt = document.createElement('option');
+    opt.value = w.id;
+    opt.textContent = `👑 ${w.name || 'Wish'} (${w.id})`;
+    if (w.id === currentWishSlug) opt.selected = true;
+    selector.appendChild(opt);
+  });
+  updateWishUrlPreview();
+}
+
+function updateWishUrlPreview() {
+  const slugInput = document.getElementById('wishSlugInput');
+  const slug = (slugInput ? slugInput.value : currentWishSlug || 'hasif').trim().toLowerCase().replace(/[^a-zA-Z0-9_-]/g, '-');
+  const liveLink = document.getElementById('wishLiveLink');
+  const deleteBtn = document.getElementById('btnDeleteWish');
+  
+  if (liveLink) {
+    const fullUrl = `${window.location.origin}/wish/${slug || 'hasif'}`;
+    liveLink.href = `/wish/${slug || 'hasif'}`;
+    liveLink.textContent = fullUrl;
+  }
+  if (deleteBtn) {
+    deleteBtn.style.display = (slug === 'default' || slug === 'hasif') ? 'none' : 'inline-block';
+  }
+}
+
+// Fetch latest settings / active wish from server on boot
+async function fetchServerSettings(slug = currentWishSlug) {
+  try {
+    const res = await fetch(`/api/wishes/${slug}`);
     if (res.ok) {
       const json = await res.json();
       if (json.success && json.data) {
@@ -56,6 +128,9 @@ async function fetchServerSettings() {
         if (typeof window.refreshMultiGrid === 'function') {
           window.refreshMultiGrid();
         }
+        const slugInput = document.getElementById('wishSlugInput');
+        if (slugInput) slugInput.value = slug;
+        updateWishUrlPreview();
       }
     }
   } catch (err) {
@@ -64,6 +139,11 @@ async function fetchServerSettings() {
 }
 
 async function saveSettings(data) {
+  const slugInput = document.getElementById('wishSlugInput');
+  const slug = (slugInput ? slugInput.value : currentWishSlug || 'hasif').trim().toLowerCase().replace(/[^a-zA-Z0-9_-]/g, '-');
+  currentWishSlug = slug;
+  data.id = slug;
+
   try {
     localStorage.setItem('birthdaySettings', JSON.stringify(data));
   } catch (err) {
@@ -71,13 +151,13 @@ async function saveSettings(data) {
   }
 
   try {
-    const res = await fetch('/api/settings', {
+    const res = await fetch(`/api/wishes/${slug}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data)
     });
     if (res.ok) {
-      const json = await res.json();
+      fetchWishesList();
       return true;
     }
   } catch (err) {
@@ -844,8 +924,75 @@ function showToast(message, type = 'success') {
   checkAuthStatus();
 })();
 
-// Initialize
+// Wish Manager Controls
+document.getElementById('wishSelector')?.addEventListener('change', function() {
+  const selectedSlug = this.value;
+  if (selectedSlug) {
+    currentWishSlug = selectedSlug;
+    fetchServerSettings(selectedSlug);
+  }
+});
+
+document.getElementById('wishSlugInput')?.addEventListener('input', function() {
+  updateWishUrlPreview();
+});
+
+document.getElementById('btnNewWish')?.addEventListener('click', () => {
+  const newSlug = `wish-${Date.now().toString().slice(-4)}`;
+  currentWishSlug = newSlug;
+  S = {
+    ...DEFAULT_SETTINGS,
+    name: 'New Birthday Person',
+    birthdayNote: 'Wishing you a magnificent birthday filled with boundless joy, happiness and unforgettable memories! 🌸',
+    wisherName: S.wisherName || ''
+  };
+  populateForm();
+  if (typeof window.refreshMultiGrid === 'function') window.refreshMultiGrid();
+  const slugInput = document.getElementById('wishSlugInput');
+  if (slugInput) slugInput.value = newSlug;
+  updateWishUrlPreview();
+  saveSettings(S);
+  showToast(`✨ Created new wish: "${newSlug}"`, 'success');
+});
+
+document.getElementById('btnCopyWishUrl')?.addEventListener('click', () => {
+  const slugInput = document.getElementById('wishSlugInput');
+  const slug = (slugInput ? slugInput.value : currentWishSlug || 'hasif').trim().toLowerCase();
+  const fullUrl = `${window.location.origin}/wish/${slug}`;
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(fullUrl).then(() => {
+      showToast(`📋 Unique Wish URL copied: ${fullUrl}`, 'success');
+    }).catch(() => {
+      prompt('Copy your unique wish link:', fullUrl);
+    });
+  } else {
+    prompt('Copy your unique wish link:', fullUrl);
+  }
+});
+
+document.getElementById('btnDeleteWish')?.addEventListener('click', async () => {
+  const slug = currentWishSlug;
+  if (!slug || slug === 'default' || slug === 'hasif') {
+    alert('Cannot delete default wish');
+    return;
+  }
+  if (confirm(`Delete wish "${slug}" permanently?`)) {
+    try {
+      await fetch(`/api/wishes/${slug}`, { method: 'DELETE' });
+      showToast(`🗑️ Deleted wish "${slug}"`, 'info');
+      currentWishSlug = 'default';
+      await fetchWishesList();
+      await fetchServerSettings('default');
+    } catch (e) {}
+  }
+});
+
+// Initialize on Load
 document.addEventListener('DOMContentLoaded', () => {
+  checkSupabaseStatus();
+  fetchWishesList();
   fetchServerSettings();
 });
+checkSupabaseStatus();
+fetchWishesList();
 fetchServerSettings();

@@ -81,9 +81,27 @@ function applyGiftLiveUpdate(newSettings) {
 
 applyGiftLiveUpdate(S);
 
+// Helper to detect current wish slug
+function getActiveWishSlug() {
+  try {
+    const pathParts = window.location.pathname.split('/').filter(Boolean);
+    if ((pathParts[0] === 'gift' || pathParts[0] === 'wish' || pathParts[0] === 'w') && pathParts[1]) {
+      return decodeURIComponent(pathParts[1]).toLowerCase().trim();
+    }
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.has('id')) return urlParams.get('id').toLowerCase().trim();
+    if (urlParams.has('w')) return urlParams.get('w').toLowerCase().trim();
+  } catch (e) {}
+  return 'default';
+}
+
 // Real-time live sync for Gift page
 function initGiftRealtime() {
-  fetch('/api/settings')
+  const wishSlug = getActiveWishSlug();
+  const settingsUrl = wishSlug && wishSlug !== 'default' ? `/api/wishes/${wishSlug}` : '/api/settings';
+  const eventsUrl = wishSlug && wishSlug !== 'default' ? `/api/events?id=${wishSlug}` : '/api/events';
+
+  fetch(settingsUrl)
     .then(r => r.json())
     .then(json => {
       if (json.success && json.data) applyGiftLiveUpdate(json.data);
@@ -100,7 +118,7 @@ function initGiftRealtime() {
     let es;
     function connect() {
       if (es) es.close();
-      es = new EventSource('/api/events');
+      es = new EventSource(eventsUrl);
       es.addEventListener('settings_updated', (e) => {
         try { applyGiftLiveUpdate(JSON.parse(e.data)); } catch (err) {}
       });

@@ -2086,10 +2086,28 @@ if (document.readyState === 'loading') {
 }
 
 
+// Helper to detect current wish slug from path (/wish/:id, /w/:id) or query (?id=xyz, ?w=xyz)
+function getActiveWishSlug() {
+  try {
+    const pathParts = window.location.pathname.split('/').filter(Boolean);
+    if ((pathParts[0] === 'wish' || pathParts[0] === 'w') && pathParts[1]) {
+      return decodeURIComponent(pathParts[1]).toLowerCase().trim();
+    }
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.has('id')) return urlParams.get('id').toLowerCase().trim();
+    if (urlParams.has('w')) return urlParams.get('w').toLowerCase().trim();
+  } catch (e) {}
+  return 'default';
+}
+
 // ===== REAL-TIME SERVER-SENT EVENTS (SSE) & STORAGE SYNC =====
 function initRealtimeSync() {
-  // 1. Initial REST API Fetch
-  fetch('/api/settings')
+  const wishSlug = getActiveWishSlug();
+  const settingsUrl = wishSlug && wishSlug !== 'default' ? `/api/wishes/${wishSlug}` : '/api/settings';
+  const eventsUrl = wishSlug && wishSlug !== 'default' ? `/api/events?id=${wishSlug}` : '/api/events';
+
+  // 1. Initial REST API Fetch from Supabase/Backend
+  fetch(settingsUrl)
     .then(res => res.json())
     .then(json => {
       if (json.success && json.data) {
@@ -2116,7 +2134,7 @@ function initRealtimeSync() {
     if (typeof EventSource === 'undefined') return;
     try {
       if (sseSource) sseSource.close();
-      sseSource = new EventSource('/api/events');
+      sseSource = new EventSource(eventsUrl);
 
       sseSource.addEventListener('initial', (e) => {
         try {

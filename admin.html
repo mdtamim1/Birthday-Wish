@@ -114,6 +114,51 @@
       </div>
     </div>
 
+    <!-- === MULTI-WISH CLOUD MANAGER === -->
+    <div class="wish-manager-card" id="wishManagerCard" style="background:linear-gradient(135deg, rgba(26, 11, 46, 0.85), rgba(15, 7, 30, 0.95)); border:1px solid rgba(218, 94, 201, 0.35); border-radius:16px; padding:18px 22px; margin-bottom:24px; box-shadow:0 8px 32px rgba(0,0,0,0.4);">
+      <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-bottom:14px;">
+        <div style="display:flex; align-items:center; gap:10px;">
+          <span style="font-size:1.6rem;">👑</span>
+          <div>
+            <h3 style="margin:0; font-size:1.1rem; font-weight:700; color:#fef08a; letter-spacing:0.02em;">Multi-Wish Cloud Manager</h3>
+            <p style="margin:0; font-size:0.82rem; color:rgba(255,255,255,0.65);">Create & manage independent birthday links for different people (Zero Reset)</p>
+          </div>
+        </div>
+        <div id="supabaseBadge" style="display:inline-flex; align-items:center; gap:6px; padding:6px 12px; border-radius:20px; font-size:0.78rem; font-weight:600; background:rgba(52,211,153,0.12); border:1px solid rgba(52,211,153,0.4); color:#34d399;">
+          <span style="width:7px; height:7px; border-radius:50%; background:#34d399; display:inline-block;"></span>
+          <span id="supabaseStatusText">⚡ Cloud Database Ready</span>
+        </div>
+      </div>
+
+      <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)); gap:14px; align-items:flex-end;">
+        <div>
+          <label style="display:block; font-size:0.82rem; font-weight:600; color:#fbbf24; margin-bottom:6px;">Select Active Wish:</label>
+          <select id="wishSelector" class="form-input" style="background:#0e051c; border-color:rgba(218,94,201,0.4); font-weight:600; width:100%;">
+            <option value="default">👑 Hasif Hossen (default)</option>
+          </select>
+        </div>
+
+        <div>
+          <label style="display:block; font-size:0.82rem; font-weight:600; color:#fbbf24; margin-bottom:6px;">Wish ID / URL Slug:</label>
+          <div style="display:flex; align-items:center; background:#0e051c; border:1px solid rgba(218,94,201,0.4); border-radius:10px; padding:0 10px;">
+            <span style="color:rgba(255,255,255,0.45); font-size:0.85rem; font-family:monospace;">/wish/</span>
+            <input type="text" id="wishSlugInput" placeholder="e.g., hasif" value="hasif" style="background:none; border:none; color:#fff; font-weight:700; width:100%; padding:10px 6px; outline:none; font-family:monospace;" />
+          </div>
+        </div>
+
+        <div style="display:flex; gap:8px; flex-wrap:wrap;">
+          <button type="button" id="btnNewWish" style="background:linear-gradient(135deg, #a855f7, #ec4899); border:none; color:#fff; border-radius:10px; padding:10px 14px; font-weight:600; font-size:0.85rem; cursor:pointer; flex:1; display:flex; align-items:center; justify-content:center; gap:6px;">➕ New Wish</button>
+          <button type="button" id="btnCopyWishUrl" style="background:linear-gradient(135deg, #3b82f6, #8b5cf6); border:none; color:#fff; border-radius:10px; padding:10px 14px; font-weight:600; font-size:0.85rem; cursor:pointer; flex:1; display:flex; align-items:center; justify-content:center; gap:6px;">🔗 Copy URL</button>
+          <button type="button" id="btnDeleteWish" style="display:none; background:rgba(239,68,68,0.2); border:1px solid rgba(239,68,68,0.4); color:#fca5a5; border-radius:10px; padding:10px 12px; font-weight:600; font-size:0.85rem; cursor:pointer;">🗑️</button>
+        </div>
+      </div>
+
+      <div style="margin-top:12px; padding-top:10px; border-top:1px solid rgba(255,255,255,0.08); font-size:0.82rem; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px;">
+        <span style="color:rgba(255,255,255,0.6);">🌐 Dedicated Wish URL:</span>
+        <a href="/wish/hasif" target="_blank" id="wishLiveLink" style="color:#38bdf8; font-family:monospace; text-decoration:none; word-break:break-all;">.../wish/hasif</a>
+      </div>
+    </div>
+
     <!-- === RECIPIENT INFO === -->
     <section class="admin-section" id="section-person">
       <div class="section-header">
